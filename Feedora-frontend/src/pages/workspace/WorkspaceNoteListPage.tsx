@@ -1,0 +1,6 @@
+import { Button, Card, Input, List, Popconfirm, Space, message } from 'antd';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../../api';
+import type { WorkspaceNote } from '../../types';
+export function WorkspaceNoteListPage(){const nav=useNavigate();const [list,setList]=useState<WorkspaceNote[]>([]);const [keyword,setKeyword]=useState('');async function load(){setList((await api.getNotes({page:1,pageSize:50,keyword})).list)}useEffect(()=>{load()},[keyword]);async function del(id:number){await api.deleteNote(id);message.success('删除成功');load()}return <Card className="soft-card" title="我的笔记" extra={<Button type="primary" onClick={()=>nav('/workspace/notes/create')}>新建笔记</Button>}><Input.Search placeholder="搜索笔记" onSearch={setKeyword} style={{maxWidth:260,marginBottom:16}}/><List dataSource={list} renderItem={n=><List.Item actions={[<Button onClick={()=>nav(`/workspace/notes/${n.noteId}`)}>编辑</Button>,<Button onClick={()=>message.info('AI 优化请进入编辑页使用')}>AI 优化</Button>,<Button onClick={()=>nav(`/posts/create?sourceType=note&noteId=${n.noteId}`)}>发布成帖子</Button>,<Popconfirm title="确认删除笔记？" onConfirm={()=>del(n.noteId)}><Button danger>删除</Button></Popconfirm>]}><List.Item.Meta title={n.title} description={`${n.summary} · ${n.knowledgeBaseName||'未归属知识库'} · ${n.updatedAt}`}/></List.Item>}/></Card>}
