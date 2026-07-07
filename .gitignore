@@ -1,1 +1,3 @@
 Feedora-frontend/node_modules
+/Feedora-backend/docs/swagger.json
+/Feedora-backend/docs/swagger.yaml

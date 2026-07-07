@@ -1,0 +1,87 @@
+# Feedora 阶段二基础设施。项目自身的 API / Worker 在本地启动，本文件只负责中间件。
+# 使用已有镜像：mysql:8.0 / redis:7-alpine / apache/kafka:3.7.2 / groupflow-elasticsearch:latest。
+# 注意：宿主机 3306 已被其它容器占用，本项目 MySQL 映射到 3307。
+# OSS：当前环境无法拉取 minio 镜像，改用本地磁盘存储（pkg/ossx.LocalStorage，接口兼容，
+#      后续网络可用时把下方 minio 服务解注释并将 config 的 oss.type 改为 minio 即可切换）。
+name: feedora
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: feedora-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: feedora
+      TZ: Asia/Shanghai
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - feedora-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: feedora-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - feedora-redis-data:/data
+
+  kafka:
+    image: apache/kafka:3.7.2
+    container_name: feedora-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+  elasticsearch:
+    image: groupflow-elasticsearch:latest
+    container_name: feedora-es
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - feedora-es-data:/usr/share/elasticsearch/data
+
+  # 网络可用时解注释以启用 MinIO 作为 OSS：
+  # minio:
+  #   image: minio/minio:latest
+  #   container_name: feedora-minio
+  #   restart: unless-stopped
+  #   environment:
+  #     MINIO_ROOT_USER: minioadmin
+  #     MINIO_ROOT_PASSWORD: minioadmin
+  #   command: server /data --console-address ":9001"
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - feedora-minio-data:/data
+
+volumes:
+  feedora-mysql-data:
+  feedora-redis-data:
+  feedora-es-data:

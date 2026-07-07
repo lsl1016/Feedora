@@ -1,0 +1,55 @@
+server:
+  name: feedora-api
+  env: local
+  port: 8090
+
+mysql:
+  # docker-compose 的 MySQL 映射到宿主机 3307（3306 已被其它容器占用）
+  dsn: root:root@tcp(localhost:3307)/feedora?charset=utf8mb4&parseTime=True&loc=Local
+  maxOpenConns: 50
+  maxIdleConns: 10
+  connMaxLifetimeSeconds: 3600
+
+jwt:
+  secret: feedora-secret-change-me
+  expireHours: 168
+
+oss:
+  # 当前环境无法拉取 minio 镜像，使用本地磁盘模拟 OSS；接口兼容，后续可切换 minio
+  type: local
+  basePath: ./uploads
+  publicBaseUrl: http://localhost:8090/static
+
+redis:
+  enabled: true
+  addr: localhost:6379
+  password: ""
+  db: 0
+  poolSize: 20
+  minIdleConns: 5
+
+elasticsearch:
+  enabled: true
+  addresses:
+    - http://localhost:9200
+  username: ""
+  password: ""
+  indexPrefix: feedora
+
+kafka:
+  enabled: true
+  brokers:
+    - localhost:9092
+  topicPrefix: feedora
+  consumerGroup: feedora-worker
+
+worker:
+  enabled: true
+  batchSize: 100
+  outboxIntervalSeconds: 2
+  maxRetry: 5
+
+cors:
+  allowOrigins:
+    - http://localhost:5173
+    - http://localhost:3000

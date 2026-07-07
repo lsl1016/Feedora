@@ -2,9 +2,9 @@ import { EditOutlined, FileAddOutlined, SendOutlined } from '@ant-design/icons';
 import { Button, Drawer, Form, Input, Modal, Select, Space, Typography, message } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, knowledgeBases } from '../../api';
+import { api } from '../../api';
 import { useAppStore } from '../../store/appStore';
-import type { AiChatMessage } from '../../types';
+import type { AiChatMessage, KnowledgeBase } from '../../types';
 
 export function AiChatDrawer() {
   const { aiDrawerOpen, aiQuestion, closeAiDrawer } = useAppStore();
@@ -15,10 +15,12 @@ export function AiChatDrawer() {
   const [sending, setSending] = useState(false);
   const [editing, setEditing] = useState<AiChatMessage>();
   const [saveTarget, setSaveTarget] = useState<AiChatMessage>();
+  const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
   const [form] = Form.useForm();
 
   useEffect(() => {
     if (!aiDrawerOpen) return;
+    api.getKnowledgeBases({ page: 1, pageSize: 50 }).then((r) => setKbs(r.list || [])).catch(() => {});
     api.createAiSession(aiQuestion || 'AI 快问').then((session) => {
       setSessionId(session.sessionId);
       setMessages([]);
@@ -60,6 +62,6 @@ export function AiChatDrawer() {
       <Space.Compact className="ai-input"><Input.TextArea rows={2} value={input} onChange={e => setInput(e.target.value)} placeholder="继续追问..." onPressEnter={(e) => { if (!e.shiftKey) { e.preventDefault(); ask(); } }} /><Button type="primary" loading={sending} icon={<SendOutlined />} onClick={() => ask()}>发送</Button></Space.Compact>
     </Drawer>
     <Modal title="编辑 AI 回答" open={!!editing} onCancel={() => setEditing(undefined)} onOk={saveEdit} maskClosable={false}><Form form={form} layout="vertical"><Form.Item name="content" label="回答内容"><Input.TextArea rows={8} /></Form.Item></Form></Modal>
-    <Modal title="保存到笔记" open={!!saveTarget} onCancel={() => setSaveTarget(undefined)} onOk={() => form.validateFields(['title','kbId']).then(saveToNote)} maskClosable={false}><Form form={form} layout="vertical"><Form.Item name="title" label="笔记标题" rules={[{ required: true, message: '请输入笔记标题' }]}><Input placeholder="AI 总结：学习路线" /></Form.Item><Form.Item name="kbId" label="所属知识库"><Select allowClear options={knowledgeBases.map(k => ({ value: k.knowledgeBaseId, label: k.name }))} /></Form.Item></Form></Modal>
+    <Modal title="保存到笔记" open={!!saveTarget} onCancel={() => setSaveTarget(undefined)} onOk={() => form.validateFields(['title','kbId']).then(saveToNote)} maskClosable={false}><Form form={form} layout="vertical"><Form.Item name="title" label="笔记标题" rules={[{ required: true, message: '请输入笔记标题' }]}><Input placeholder="AI 总结：学习路线" /></Form.Item><Form.Item name="kbId" label="所属知识库"><Select allowClear options={kbs.map(k => ({ value: k.knowledgeBaseId, label: k.name }))} /></Form.Item></Form></Modal>
   </>;
 }
