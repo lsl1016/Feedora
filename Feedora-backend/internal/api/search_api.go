@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
@@ -20,33 +21,38 @@ func NewSearchAPI(svc *service.SearchService) *SearchAPI {
 // @Summary  综合搜索
 // @Tags     搜索
 // @Produce  json
-// @Param    keyword   query  string  false  "搜索关键词"
-// @Param    type      query  string  false  "搜索类型"
-// @Param    page      query  int     false  "页码"
-// @Param    pageSize  query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.SearchQuery  false  "综合搜索查询参数"
+// @Success  200  {object}  dto.SearchResultPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /search [get]
 func (h *SearchAPI) Search(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.Search(c.Query("keyword"), c.Query("type"), page, size, middleware.CurrentUserID(c))
+	var req dto.SearchQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
+	list, total, err := h.svc.Search(req.Keyword, req.Type, req.Page, req.PageSize, middleware.CurrentUserID(c))
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }
 
 // Suggest 搜索联想建议
 // @Summary  搜索联想建议
 // @Tags     搜索
 // @Produce  json
-// @Param    keyword  query  string  false  "搜索关键词"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.SearchSuggestQuery  false  "搜索联想查询参数"
+// @Success  200  {object}  dto.SearchSuggestResponse
 // @Failure  400  {object}  response.Body
 // @Router   /search/suggest [get]
 func (h *SearchAPI) Suggest(c *gin.Context) {
-	res, err := h.svc.Suggest(c.Query("keyword"))
+	var req dto.SearchSuggestQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	res, err := h.svc.Suggest(req.Keyword)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -58,7 +64,7 @@ func (h *SearchAPI) Suggest(c *gin.Context) {
 // @Summary  热门搜索词
 // @Tags     搜索
 // @Produce  json
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.HotKeywordResponse
 // @Failure  400  {object}  response.Body
 // @Router   /search/hot-keywords [get]
 func (h *SearchAPI) HotKeywords(c *gin.Context) {

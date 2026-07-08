@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
-	errs "github.com/feedora/backend/pkg/errors"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -22,12 +21,16 @@ func NewCommentAPI(svc *service.CommentService) *CommentAPI {
 // @Summary  获取帖子评论列表
 // @Tags     评论
 // @Produce  json
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.CommentListResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts/{postId}/comments [get]
 func (h *CommentAPI) ListByPost(c *gin.Context) {
-	list, err := h.svc.ListByPost(paramID(c, "postId"), middleware.CurrentUserID(c))
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	list, err := h.svc.ListByPost(req.PostID, middleware.CurrentUserID(c))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -41,14 +44,13 @@ func (h *CommentAPI) ListByPost(c *gin.Context) {
 // @Accept   json
 // @Produce  json
 // @Param    body  body  dto.CreateCommentRequest  true  "评论请求体"
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.CommentResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /comments [post]
 func (h *CommentAPI) Create(c *gin.Context) {
 	var in dto.CreateCommentRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		response.Fail(c, errs.ErrParams)
+	if !bindJSON(c, &in) {
 		return
 	}
 	res, err := h.svc.Create(in.PostID, middleware.CurrentUserID(c), in.Content)
@@ -64,19 +66,22 @@ func (h *CommentAPI) Create(c *gin.Context) {
 // @Tags     评论
 // @Accept   json
 // @Produce  json
-// @Param    commentId  path  int  true  "评论ID"
-// @Param    body  body  dto.ReplyCommentRequest  true  "回复请求体"
-// @Success  200  {object}  response.Body
+// @Param    commentId  path  dto.CommentIDURI          true  "评论路径参数"
+// @Param    body       body  dto.ReplyCommentRequest   true  "回复请求体"
+// @Success  200  {object}  dto.CommentResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /comments/{commentId}/replies [post]
 func (h *CommentAPI) Reply(c *gin.Context) {
-	var in dto.ReplyCommentRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		response.Fail(c, errs.ErrParams)
+	var uri dto.CommentIDURI
+	if !bindURI(c, &uri) {
 		return
 	}
-	res, err := h.svc.Reply(paramID(c, "commentId"), middleware.CurrentUserID(c), in.Content, in.ReplyToUserID)
+	var in dto.ReplyCommentRequest
+	if !bindJSON(c, &in) {
+		return
+	}
+	res, err := h.svc.Reply(uri.CommentID, middleware.CurrentUserID(c), in.Content, in.ReplyToUserID)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -88,14 +93,18 @@ func (h *CommentAPI) Reply(c *gin.Context) {
 // @Summary  删除评论
 // @Tags     评论
 // @Produce  json
-// @Param    commentId  path  int  true  "评论ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.CommentIDURI  true  "评论路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /comments/{commentId} [delete]
 func (h *CommentAPI) Delete(c *gin.Context) {
+	var req dto.CommentIDURI
+	if !bindURI(c, &req) {
+		return
+	}
 	isAdmin := middleware.CurrentRole(c) == "admin"
-	if err := h.svc.Delete(paramID(c, "commentId"), middleware.CurrentUserID(c), isAdmin); err != nil {
+	if err := h.svc.Delete(req.CommentID, middleware.CurrentUserID(c), isAdmin); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -106,13 +115,17 @@ func (h *CommentAPI) Delete(c *gin.Context) {
 // @Summary  点赞评论
 // @Tags     评论
 // @Produce  json
-// @Param    commentId  path  int  true  "评论ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.CommentIDURI  true  "评论路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /comments/{commentId}/like [post]
 func (h *CommentAPI) Like(c *gin.Context) {
-	if err := h.svc.SetLike(paramID(c, "commentId"), middleware.CurrentUserID(c), true); err != nil {
+	var req dto.CommentIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.SetLike(req.CommentID, middleware.CurrentUserID(c), true); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -123,13 +136,17 @@ func (h *CommentAPI) Like(c *gin.Context) {
 // @Summary  取消点赞评论
 // @Tags     评论
 // @Produce  json
-// @Param    commentId  path  int  true  "评论ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.CommentIDURI  true  "评论路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /comments/{commentId}/like [delete]
 func (h *CommentAPI) Unlike(c *gin.Context) {
-	if err := h.svc.SetLike(paramID(c, "commentId"), middleware.CurrentUserID(c), false); err != nil {
+	var req dto.CommentIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.SetLike(req.CommentID, middleware.CurrentUserID(c), false); err != nil {
 		response.Fail(c, err)
 		return
 	}

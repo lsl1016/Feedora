@@ -1,35 +1,48 @@
 package api
 
 import (
-	"strconv"
-
+	"github.com/feedora/backend/internal/dto"
+	errspkg "github.com/feedora/backend/pkg/errors"
+	"github.com/feedora/backend/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
-// pageParams 从 query 解析分页参数，带默认值与上限保护。
-func pageParams(c *gin.Context) (page, size int) {
-	page, _ = strconv.Atoi(c.Query("page"))
-	size, _ = strconv.Atoi(c.Query("pageSize"))
-	if page <= 0 {
-		page = 1
+// normalizePageRequest 对分页参数补默认值并限制上限。
+func normalizePageRequest(req *dto.PageRequest) {
+	if req.Page <= 0 {
+		req.Page = 1
 	}
-	if size <= 0 {
-		size = 10
+	if req.PageSize <= 0 {
+		req.PageSize = 10
 	}
-	if size > 100 {
-		size = 100
+	if req.PageSize > 100 {
+		req.PageSize = 100
 	}
-	return
 }
 
-// paramID 从路径参数解析 int64 ID。
-func paramID(c *gin.Context, name string) int64 {
-	id, _ := strconv.ParseInt(c.Param(name), 10, 64)
-	return id
+// bindJSON 绑定 JSON 请求体，失败时统一返回参数错误。
+func bindJSON(c *gin.Context, req any) bool {
+	if err := c.ShouldBindJSON(req); err != nil {
+		response.Fail(c, errspkg.ErrParams)
+		return false
+	}
+	return true
 }
 
-// queryID 从 query 解析 int64 ID。
-func queryID(c *gin.Context, name string) int64 {
-	id, _ := strconv.ParseInt(c.Query(name), 10, 64)
-	return id
+// bindQuery 绑定 query 参数，失败时统一返回参数错误。
+func bindQuery(c *gin.Context, req any) bool {
+	if err := c.ShouldBindQuery(req); err != nil {
+		response.Fail(c, errspkg.ErrParams)
+		return false
+	}
+	return true
+}
+
+// bindURI 绑定路径参数，失败时统一返回参数错误。
+func bindURI(c *gin.Context, req any) bool {
+	if err := c.ShouldBindUri(req); err != nil {
+		response.Fail(c, errspkg.ErrParams)
+		return false
+	}
+	return true
 }

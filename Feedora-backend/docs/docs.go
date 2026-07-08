@@ -31,14 +31,19 @@ const docTemplate = `{
                 "summary": "圈子列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -47,13 +52,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.AdminCirclePageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -75,14 +80,19 @@ const docTemplate = `{
                 "summary": "评论列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -91,13 +101,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.AdminCommentPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -121,13 +131,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.AdminStatsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -149,14 +159,19 @@ const docTemplate = `{
                 "summary": "操作日志列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -165,13 +180,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.AdminOperationLogPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -193,21 +208,27 @@ const docTemplate = `{
                 "summary": "帖子列表",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "帖子状态",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "published",
+                        "description": "帖子状态。",
+                        "name": "status",
                         "in": "query"
                     }
                 ],
@@ -215,13 +236,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.AdminPostPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -245,13 +266,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TagListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -274,12 +295,12 @@ const docTemplate = `{
                 "summary": "创建标签",
                 "parameters": [
                     {
-                        "description": "请求体",
+                        "description": "创建标签请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.CreateTagRequest"
+                            "$ref": "#/definitions/dto.CreateTagRequest"
                         }
                     }
                 ],
@@ -287,13 +308,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TagResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -318,19 +339,21 @@ const docTemplate = `{
                 "summary": "更新标签",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "标签ID",
+                        "example": 1,
+                        "description": "标签 ID。",
                         "name": "tagId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "请求体",
+                        "description": "更新标签请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.UpdateTagRequest"
+                            "$ref": "#/definitions/dto.UpdateTagRequest"
                         }
                     }
                 ],
@@ -338,13 +361,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TagResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -366,14 +389,19 @@ const docTemplate = `{
                 "summary": "话题列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -382,13 +410,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TopicPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -411,12 +439,12 @@ const docTemplate = `{
                 "summary": "创建话题",
                 "parameters": [
                     {
-                        "description": "请求体",
+                        "description": "创建话题请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.CreateTopicRequest"
+                            "$ref": "#/definitions/dto.CreateTopicRequest"
                         }
                     }
                 ],
@@ -424,13 +452,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TopicResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -455,19 +483,21 @@ const docTemplate = `{
                 "summary": "更新话题",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "话题ID",
+                        "example": 1,
+                        "description": "话题 ID。",
                         "name": "topicId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "请求体",
+                        "description": "更新话题请求体",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/dto.UpdateTopicRequest"
                         }
                     }
                 ],
@@ -475,13 +505,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TopicResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -504,19 +534,25 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "关键词",
+                        "example": "feedora",
+                        "description": "搜索关键词。",
                         "name": "keyword",
                         "in": "query"
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -525,13 +561,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.UserListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -556,7 +592,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.LoginRequest"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
@@ -564,13 +600,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.LoginResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -594,13 +630,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -624,13 +660,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CurrentUserResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -655,7 +691,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.RegisterRequest"
+                            "$ref": "#/definitions/dto.RegisterRequest"
                         }
                     }
                 ],
@@ -663,13 +699,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.LoginResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -687,38 +723,47 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "范围",
-                        "name": "scope",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "关键词",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "分类",
+                        "example": "technology",
+                        "description": "分类。",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "排序",
-                        "name": "sort",
+                        "example": "feedora",
+                        "description": "搜索关键词。",
+                        "name": "keyword",
                         "in": "query"
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "all",
+                        "description": "范围。",
+                        "name": "scope",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "hot",
+                        "description": "排序方式。",
+                        "name": "sort",
                         "in": "query"
                     }
                 ],
@@ -726,13 +771,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CirclePageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -760,7 +805,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.CreateCircleRequest"
+                            "$ref": "#/definitions/dto.CreateCircleRequest"
                         }
                     }
                 ],
@@ -768,13 +813,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CircleResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -791,8 +836,10 @@ const docTemplate = `{
                 "summary": "获取圈子详情",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
@@ -802,13 +849,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CircleResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -830,8 +877,10 @@ const docTemplate = `{
                 "summary": "加入圈子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
@@ -841,13 +890,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -869,8 +918,10 @@ const docTemplate = `{
                 "summary": "退出圈子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
@@ -880,13 +931,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -903,21 +954,28 @@ const docTemplate = `{
                 "summary": "获取圈子成员列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -926,13 +984,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CircleMemberPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -954,15 +1012,19 @@ const docTemplate = `{
                 "summary": "移除圈子成员",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "用户ID",
+                        "example": 2,
+                        "description": "用户 ID。",
                         "name": "userId",
                         "in": "path",
                         "required": true
@@ -972,13 +1034,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1003,31 +1065,44 @@ const docTemplate = `{
                 "summary": "禁言成员",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "用户ID",
+                        "example": 2,
+                        "description": "用户 ID。",
                         "name": "userId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "禁言请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.MuteCircleMemberRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1052,31 +1127,44 @@ const docTemplate = `{
                 "summary": "设置成员角色",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "用户ID",
+                        "example": 2,
+                        "description": "用户 ID。",
                         "name": "userId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "设置角色请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SetCircleMemberRoleRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1098,15 +1186,19 @@ const docTemplate = `{
                 "summary": "解除禁言成员",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "用户ID",
+                        "example": 2,
+                        "description": "用户 ID。",
                         "name": "userId",
                         "in": "path",
                         "required": true
@@ -1116,13 +1208,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1139,28 +1231,36 @@ const docTemplate = `{
                 "summary": "获取圈子帖子列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "圈子ID",
+                        "example": 1,
+                        "description": "圈子 ID。",
                         "name": "circleId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "排序",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "latest",
+                        "description": "排序方式。",
+                        "name": "sort",
                         "in": "query"
                     }
                 ],
@@ -1168,13 +1268,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1204,7 +1304,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.CreateCommentRequest"
+                            "$ref": "#/definitions/dto.CreateCommentRequest"
                         }
                     }
                 ],
@@ -1212,13 +1312,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CommentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1240,8 +1340,10 @@ const docTemplate = `{
                 "summary": "删除评论",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "评论ID",
+                        "example": 1,
+                        "description": "评论 ID。",
                         "name": "commentId",
                         "in": "path",
                         "required": true
@@ -1251,13 +1353,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1279,8 +1381,10 @@ const docTemplate = `{
                 "summary": "点赞评论",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "评论ID",
+                        "example": 1,
+                        "description": "评论 ID。",
                         "name": "commentId",
                         "in": "path",
                         "required": true
@@ -1290,13 +1394,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1316,8 +1420,10 @@ const docTemplate = `{
                 "summary": "取消点赞评论",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "评论ID",
+                        "example": 1,
+                        "description": "评论 ID。",
                         "name": "commentId",
                         "in": "path",
                         "required": true
@@ -1327,13 +1433,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1358,8 +1464,10 @@ const docTemplate = `{
                 "summary": "回复评论",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "评论ID",
+                        "example": 1,
+                        "description": "评论 ID。",
                         "name": "commentId",
                         "in": "path",
                         "required": true
@@ -1370,7 +1478,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.ReplyCommentRequest"
+                            "$ref": "#/definitions/dto.ReplyCommentRequest"
                         }
                     }
                 ],
@@ -1378,13 +1486,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CommentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1426,13 +1534,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.UploadResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1456,13 +1564,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CheckInResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1479,27 +1587,34 @@ const docTemplate = `{
                 "summary": "成长排行榜",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "排行类型",
-                        "name": "type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "时间范围",
-                        "name": "range",
-                        "in": "query"
-                    },
-                    {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "all",
+                        "description": "时间范围。",
+                        "name": "range",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "active",
+                        "description": "排行类型。",
+                        "name": "type",
                         "in": "query"
                     }
                 ],
@@ -1507,13 +1622,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.RankingListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1536,7 +1651,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "任务类型",
+                        "example": "daily",
+                        "description": "任务类型。",
                         "name": "type",
                         "in": "query"
                     }
@@ -1545,13 +1661,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TaskListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1573,8 +1689,10 @@ const docTemplate = `{
                 "summary": "领取任务奖励",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "任务ID",
+                        "example": 1,
+                        "description": "任务 ID。",
                         "name": "taskId",
                         "in": "path",
                         "required": true
@@ -1584,13 +1702,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.ClaimedResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1607,27 +1725,34 @@ const docTemplate = `{
                 "summary": "热门榜单",
                 "parameters": [
                     {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
-                        "description": "榜单类型",
+                        "example": "post",
+                        "description": "榜单类型。",
                         "name": "rankType",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "时间范围",
+                        "example": "today",
+                        "description": "时间范围。",
                         "name": "timeRange",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页数量",
-                        "name": "pageSize",
                         "in": "query"
                     }
                 ],
@@ -1635,13 +1760,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.HotRankListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1664,19 +1789,25 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "通知分类",
+                        "example": "system",
+                        "description": "通知分类。",
                         "name": "category",
                         "in": "query"
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -1685,13 +1816,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.NotificationListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1715,13 +1846,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1745,13 +1876,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CountResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1773,8 +1904,10 @@ const docTemplate = `{
                 "summary": "标记单条通知已读",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "通知ID",
+                        "example": 1,
+                        "description": "通知 ID。",
                         "name": "notificationId",
                         "in": "path",
                         "required": true
@@ -1784,13 +1917,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1807,69 +1940,83 @@ const docTemplate = `{
                 "summary": "获取帖子列表",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "信息流类型",
-                        "name": "feedType",
+                        "type": "integer",
+                        "example": 1,
+                        "description": "作者 ID。",
+                        "name": "authorId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "圈子 ID。",
+                        "name": "circleId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "排序方式",
+                        "example": "recommend",
+                        "description": "信息流类型。",
+                        "name": "feedType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "是否包含隐藏帖子。",
+                        "name": "includeHidden",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "feedora",
+                        "description": "搜索关键词。",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "latest",
+                        "description": "排序方式。",
                         "name": "sort",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "状态",
+                        "example": "published",
+                        "description": "帖子状态。",
                         "name": "status",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
-                        "description": "标签ID",
+                        "example": 1,
+                        "description": "标签 ID。",
                         "name": "tagId",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "圈子ID",
-                        "name": "circleId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "话题ID",
+                        "example": 1,
+                        "description": "话题 ID。",
                         "name": "topicId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "作者ID",
-                        "name": "authorId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "是否包含隐藏帖子",
-                        "name": "includeHidden",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页数量",
-                        "name": "pageSize",
                         "in": "query"
                     }
                 ],
@@ -1877,13 +2024,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1911,7 +2058,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.CreatePostRequest"
+                            "$ref": "#/definitions/dto.CreatePostRequest"
                         }
                     }
                 ],
@@ -1919,13 +2066,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1942,8 +2089,10 @@ const docTemplate = `{
                 "summary": "获取帖子详情",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -1953,13 +2102,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -1982,8 +2131,10 @@ const docTemplate = `{
                 "summary": "更新帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -1994,7 +2145,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.UpdatePostRequest"
+                            "$ref": "#/definitions/dto.UpdatePostRequest"
                         }
                     }
                 ],
@@ -2002,13 +2153,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2028,8 +2179,10 @@ const docTemplate = `{
                 "summary": "删除帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2039,13 +2192,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2062,8 +2215,10 @@ const docTemplate = `{
                 "summary": "获取帖子评论列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2073,13 +2228,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.CommentListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2101,8 +2256,10 @@ const docTemplate = `{
                 "summary": "收藏帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2112,13 +2269,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.InteractionResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2138,8 +2295,10 @@ const docTemplate = `{
                 "summary": "取消收藏帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2149,13 +2308,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.InteractionResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2177,8 +2336,10 @@ const docTemplate = `{
                 "summary": "隐藏帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2188,13 +2349,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2216,8 +2377,10 @@ const docTemplate = `{
                 "summary": "点赞帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2227,13 +2390,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.InteractionResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2253,8 +2416,10 @@ const docTemplate = `{
                 "summary": "取消点赞帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2264,13 +2429,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.InteractionResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2295,24 +2460,35 @@ const docTemplate = `{
                 "summary": "转发帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "转发请求体",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RepostPostRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2334,8 +2510,10 @@ const docTemplate = `{
                 "summary": "分享帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2345,13 +2523,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2373,8 +2551,10 @@ const docTemplate = `{
                 "summary": "取消隐藏帖子",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "帖子ID",
+                        "example": 1,
+                        "description": "帖子 ID。",
                         "name": "postId",
                         "in": "path",
                         "required": true
@@ -2384,13 +2564,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.EmptyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2408,26 +2588,33 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "搜索关键词",
+                        "example": "feedora",
+                        "description": "搜索关键词。",
                         "name": "keyword",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "搜索类型",
-                        "name": "type",
-                        "in": "query"
-                    },
-                    {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "all",
+                        "description": "搜索类型。",
+                        "name": "type",
                         "in": "query"
                     }
                 ],
@@ -2435,13 +2622,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.SearchResultPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2460,13 +2647,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.HotKeywordResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2484,7 +2671,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "搜索关键词",
+                        "example": "feedora",
+                        "description": "搜索关键词。",
                         "name": "keyword",
                         "in": "query"
                     }
@@ -2493,13 +2681,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.SearchSuggestResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2518,13 +2706,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TagListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2541,8 +2729,10 @@ const docTemplate = `{
                 "summary": "标签详情",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "标签ID",
+                        "example": 1,
+                        "description": "标签 ID。",
                         "name": "tagId",
                         "in": "path",
                         "required": true
@@ -2552,13 +2742,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TagResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2575,28 +2765,36 @@ const docTemplate = `{
                 "summary": "标签下的帖子列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "标签ID",
+                        "example": 1,
+                        "description": "标签 ID。",
                         "name": "tagId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "排序方式",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "latest",
+                        "description": "排序方式。",
+                        "name": "sort",
                         "in": "query"
                     }
                 ],
@@ -2604,13 +2802,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2627,21 +2825,27 @@ const docTemplate = `{
                 "summary": "话题列表",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "分类标签（默认 all）",
-                        "name": "tab",
-                        "in": "query"
-                    },
-                    {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "all",
+                        "description": "分类标签。",
+                        "name": "tab",
                         "in": "query"
                     }
                 ],
@@ -2649,13 +2853,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TopicPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2672,8 +2876,10 @@ const docTemplate = `{
                 "summary": "话题详情",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "话题ID",
+                        "example": 1,
+                        "description": "话题 ID。",
                         "name": "topicId",
                         "in": "path",
                         "required": true
@@ -2683,13 +2889,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.TopicResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2706,28 +2912,36 @@ const docTemplate = `{
                 "summary": "话题下的帖子列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "话题ID",
+                        "example": 1,
+                        "description": "话题 ID。",
                         "name": "topicId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "排序方式",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "latest",
+                        "description": "排序方式。",
+                        "name": "sort",
                         "in": "query"
                     }
                 ],
@@ -2735,13 +2949,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2759,19 +2973,25 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "搜索关键词",
+                        "example": "feedora",
+                        "description": "搜索关键词。",
                         "name": "keyword",
                         "in": "query"
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -2780,13 +3000,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.UserListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2808,14 +3028,19 @@ const docTemplate = `{
                 "summary": "获取我的评论列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -2824,13 +3049,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.MyCommentPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2852,14 +3077,19 @@ const docTemplate = `{
                 "summary": "获取我收藏的帖子列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -2868,13 +3098,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2896,14 +3126,19 @@ const docTemplate = `{
                 "summary": "获取我点赞的帖子列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -2912,13 +3147,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2940,14 +3175,19 @@ const docTemplate = `{
                 "summary": "获取我的帖子列表",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "页码",
+                        "example": 1,
+                        "description": "页码，从 1 开始。",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "每页数量",
+                        "example": 10,
+                        "description": "每页数量，最大 100。",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -2956,13 +3196,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.PostPageResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -2992,7 +3232,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_internal_dto.UpdateProfileRequest"
+                            "$ref": "#/definitions/dto.UpdateProfileRequest"
                         }
                     }
                 ],
@@ -3000,13 +3240,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.UserResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -3023,8 +3263,10 @@ const docTemplate = `{
                 "summary": "获取用户详情",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "用户ID",
+                        "example": 1,
+                        "description": "用户 ID。",
                         "name": "userId",
                         "in": "path",
                         "required": true
@@ -3034,13 +3276,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/dto.UserResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_feedora_backend_pkg_response.Body"
+                            "$ref": "#/definitions/response.Body"
                         }
                     }
                 }
@@ -3048,200 +3290,3077 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_feedora_backend_internal_dto.CreateCircleRequest": {
+        "dto.AdminCircleItem": {
+            "type": "object",
+            "properties": {
+                "Avatar": {
+                    "description": "圈子头像。",
+                    "type": "string"
+                },
+                "Category": {
+                    "description": "圈子分类。",
+                    "type": "string"
+                },
+                "CreatedAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "Description": {
+                    "description": "圈子描述。",
+                    "type": "string"
+                },
+                "FeaturedCount": {
+                    "description": "精选数。",
+                    "type": "integer"
+                },
+                "ID": {
+                    "description": "圈子主键 ID。",
+                    "type": "integer"
+                },
+                "IsRecommended": {
+                    "description": "是否推荐。",
+                    "type": "boolean"
+                },
+                "JoinType": {
+                    "description": "加入方式。",
+                    "type": "string"
+                },
+                "MemberCount": {
+                    "description": "成员数。",
+                    "type": "integer"
+                },
+                "Name": {
+                    "description": "圈子名称。",
+                    "type": "string"
+                },
+                "OwnerID": {
+                    "description": "圈主 ID。",
+                    "type": "integer"
+                },
+                "PostCount": {
+                    "description": "帖子数。",
+                    "type": "integer"
+                },
+                "PostPermission": {
+                    "description": "发帖权限。",
+                    "type": "string"
+                },
+                "Rules": {
+                    "description": "圈规说明。",
+                    "type": "string"
+                },
+                "Status": {
+                    "description": "圈子状态。",
+                    "type": "string"
+                },
+                "UpdatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AdminCirclePageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_AdminCircleItem"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.AdminCommentItem": {
+            "type": "object",
+            "properties": {
+                "Content": {
+                    "description": "评论内容。",
+                    "type": "string"
+                },
+                "CreatedAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "ID": {
+                    "description": "评论主键 ID。",
+                    "type": "integer"
+                },
+                "LikeCount": {
+                    "description": "点赞数。",
+                    "type": "integer"
+                },
+                "ParentID": {
+                    "description": "父评论 ID。",
+                    "type": "integer"
+                },
+                "PostID": {
+                    "description": "帖子 ID。",
+                    "type": "integer"
+                },
+                "ReplyToUserID": {
+                    "description": "被回复用户 ID。",
+                    "type": "integer"
+                },
+                "RootID": {
+                    "description": "根评论 ID。",
+                    "type": "integer"
+                },
+                "Status": {
+                    "description": "评论状态。",
+                    "type": "string"
+                },
+                "UpdatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                },
+                "UserID": {
+                    "description": "用户 ID。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.AdminCommentPageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_AdminCommentItem"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.AdminOperationLogItem": {
+            "type": "object",
+            "properties": {
+                "Action": {
+                    "description": "操作动作。",
+                    "type": "string"
+                },
+                "AdminID": {
+                    "description": "管理员 ID。",
+                    "type": "integer"
+                },
+                "AdminName": {
+                    "description": "管理员名称。",
+                    "type": "string"
+                },
+                "CreatedAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "Detail": {
+                    "description": "详情描述。",
+                    "type": "string"
+                },
+                "ID": {
+                    "description": "日志主键 ID。",
+                    "type": "integer"
+                },
+                "TargetID": {
+                    "description": "目标 ID。",
+                    "type": "integer"
+                },
+                "TargetType": {
+                    "description": "目标类型。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AdminOperationLogPageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_AdminOperationLogItem"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.AdminPostItem": {
+            "type": "object",
+            "properties": {
+                "AuthorID": {
+                    "description": "作者 ID。",
+                    "type": "integer"
+                },
+                "CircleID": {
+                    "description": "圈子 ID。",
+                    "type": "integer"
+                },
+                "CommentCount": {
+                    "description": "评论数。",
+                    "type": "integer"
+                },
+                "ContentMD": {
+                    "description": "Markdown 内容。",
+                    "type": "string"
+                },
+                "CoverURL": {
+                    "description": "封面图地址。",
+                    "type": "string"
+                },
+                "CreatedAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "FavoriteCount": {
+                    "description": "收藏数。",
+                    "type": "integer"
+                },
+                "HotScore": {
+                    "description": "热度值。",
+                    "type": "integer"
+                },
+                "ID": {
+                    "description": "帖子主键 ID。",
+                    "type": "integer"
+                },
+                "LikeCount": {
+                    "description": "点赞数。",
+                    "type": "integer"
+                },
+                "PostType": {
+                    "description": "帖子类型。",
+                    "type": "string"
+                },
+                "PublishedAt": {
+                    "description": "实际发布时间。",
+                    "type": "string"
+                },
+                "RepostComment": {
+                    "description": "转发文案。",
+                    "type": "string"
+                },
+                "RepostCount": {
+                    "description": "转发数。",
+                    "type": "integer"
+                },
+                "ScheduledAt": {
+                    "description": "预约发布时间。",
+                    "type": "string"
+                },
+                "ShareCount": {
+                    "description": "分享数。",
+                    "type": "integer"
+                },
+                "SourcePostID": {
+                    "description": "来源帖子 ID。",
+                    "type": "integer"
+                },
+                "Status": {
+                    "description": "帖子状态。",
+                    "type": "string"
+                },
+                "Summary": {
+                    "description": "摘要内容。",
+                    "type": "string"
+                },
+                "Title": {
+                    "description": "帖子标题。",
+                    "type": "string"
+                },
+                "UpdatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                },
+                "ViewCount": {
+                    "description": "浏览数。",
+                    "type": "integer"
+                },
+                "Visibility": {
+                    "description": "可见性。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AdminPostPageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_AdminPostItem"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.AdminStats": {
+            "type": "object",
+            "properties": {
+                "circleCount": {
+                    "description": "圈子数量。",
+                    "type": "integer"
+                },
+                "commentCount": {
+                    "description": "评论数量。",
+                    "type": "integer"
+                },
+                "postCount": {
+                    "description": "帖子数量。",
+                    "type": "integer"
+                },
+                "userCount": {
+                    "description": "用户数量。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.AdminStatsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.AdminStats"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.CheckInResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.CheckInResult"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.CheckInResult": {
+            "type": "object",
+            "properties": {
+                "awardedPoints": {
+                    "description": "本次发放积分。",
+                    "type": "integer"
+                },
+                "continuousDays": {
+                    "description": "连续签到天数。",
+                    "type": "integer"
+                },
+                "points": {
+                    "description": "当前积分。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.Circle": {
             "type": "object",
             "properties": {
                 "avatar": {
+                    "description": "圈子头像。",
                     "type": "string"
                 },
                 "category": {
+                    "description": "圈子分类。",
+                    "type": "string"
+                },
+                "circleId": {
+                    "description": "圈子 ID。",
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "description": "创建时间。",
                     "type": "string"
                 },
                 "description": {
+                    "description": "圈子描述。",
                     "type": "string"
                 },
+                "featuredPostCount": {
+                    "description": "精选帖子数量。",
+                    "type": "integer"
+                },
+                "isJoined": {
+                    "description": "当前用户是否已加入。",
+                    "type": "boolean"
+                },
+                "isRecommended": {
+                    "description": "是否推荐。",
+                    "type": "boolean"
+                },
                 "joinType": {
+                    "description": "加入方式。",
+                    "type": "string"
+                },
+                "memberCount": {
+                    "description": "成员数量。",
+                    "type": "integer"
+                },
+                "myRole": {
+                    "description": "当前用户在圈子内角色。",
+                    "type": "string"
+                },
+                "myStatus": {
+                    "description": "当前用户在圈子内状态。",
                     "type": "string"
                 },
                 "name": {
+                    "description": "圈子名称。",
                     "type": "string"
                 },
+                "owner": {
+                    "description": "圈主信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.UserSummary"
+                        }
+                    ]
+                },
+                "ownerId": {
+                    "description": "圈主用户 ID。",
+                    "type": "integer"
+                },
+                "postCount": {
+                    "description": "帖子数量。",
+                    "type": "integer"
+                },
                 "postPermission": {
+                    "description": "发帖权限。",
                     "type": "string"
                 },
                 "rules": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.CreateCommentRequest": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "postId": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.CreatePostRequest": {
-            "type": "object",
-            "properties": {
-                "circleId": {
-                    "type": "integer"
-                },
-                "content": {
-                    "type": "string"
-                },
-                "images": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "publishMode": {
-                    "type": "string"
-                },
-                "scheduledAt": {
-                    "type": "string"
-                },
-                "tagIds": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "topicIds": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "visibility": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.CreateTagRequest": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.CreateTopicRequest": {
-            "type": "object",
-            "properties": {
-                "coverImage": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "isOfficial": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.LoginRequest": {
-            "type": "object",
-            "properties": {
-                "account": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.RegisterRequest": {
-            "type": "object",
-            "properties": {
-                "account": {
-                    "type": "string"
-                },
-                "confirmPassword": {
-                    "type": "string"
-                },
-                "nickname": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.ReplyCommentRequest": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "replyToUserId": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.UpdatePostRequest": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "images": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "visibility": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.UpdateProfileRequest": {
-            "type": "object",
-            "properties": {
-                "avatar": {
-                    "type": "string"
-                },
-                "bio": {
-                    "type": "string"
-                },
-                "nickname": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_feedora_backend_internal_dto.UpdateTagRequest": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "name": {
+                    "description": "圈规说明。",
                     "type": "string"
                 },
                 "status": {
+                    "description": "圈子状态。",
+                    "type": "string"
+                },
+                "tags": {
+                    "description": "标签列表。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TagSummary"
+                    }
+                },
+                "updatedAt": {
+                    "description": "更新时间。",
                     "type": "string"
                 }
             }
         },
-        "github_com_feedora_backend_pkg_response.Body": {
+        "dto.CircleBrief": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "圈子头像。",
+                    "type": "string"
+                },
+                "circleId": {
+                    "description": "圈子 ID。",
+                    "type": "integer"
+                },
+                "memberCount": {
+                    "description": "成员数量。",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "圈子名称。",
+                    "type": "string"
+                },
+                "postCount": {
+                    "description": "帖子数量。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CircleMember": {
+            "type": "object",
+            "properties": {
+                "circleId": {
+                    "description": "圈子 ID。",
+                    "type": "integer"
+                },
+                "id": {
+                    "description": "成员记录 ID。",
+                    "type": "integer"
+                },
+                "joinedAt": {
+                    "description": "加入时间。",
+                    "type": "string"
+                },
+                "muteReason": {
+                    "description": "禁言原因。",
+                    "type": "string"
+                },
+                "mutedUntil": {
+                    "description": "禁言结束时间。",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "成员角色。",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "成员状态。",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "用户信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.UserSummary"
+                        }
+                    ]
+                },
+                "userId": {
+                    "description": "用户 ID。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CircleMemberPageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_CircleMember"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.CirclePageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_Circle"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.CircleResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.Circle"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.ClaimedData": {
+            "type": "object",
+            "properties": {
+                "claimed": {
+                    "description": "是否领取成功。",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "dto.ClaimedResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ClaimedData"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.Comment": {
+            "type": "object",
+            "properties": {
+                "commentId": {
+                    "description": "评论 ID。",
+                    "type": "integer"
+                },
+                "content": {
+                    "description": "评论内容。",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "likeCount": {
+                    "description": "点赞数量。",
+                    "type": "integer"
+                },
+                "liked": {
+                    "description": "当前用户是否已点赞。",
+                    "type": "boolean"
+                },
+                "postId": {
+                    "description": "所属帖子 ID。",
+                    "type": "integer"
+                },
+                "replies": {
+                    "description": "子回复列表。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Comment"
+                    }
+                },
+                "status": {
+                    "description": "评论状态。",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "评论用户信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.UserSummary"
+                        }
+                    ]
+                },
+                "userId": {
+                    "description": "评论用户 ID。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CommentListResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Comment"
+                    }
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.CommentResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.Comment"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.ContentTag": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "标签描述。",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "标签状态。",
+                    "type": "string"
+                },
+                "tagId": {
+                    "description": "标签 ID。",
+                    "type": "integer"
+                },
+                "tagName": {
+                    "description": "标签名称。",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                },
+                "useCount": {
+                    "description": "使用次数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CountData": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "description": "统计数量。",
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "dto.CountResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.CountData"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.CreateCircleRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "avatar": {
+                    "description": "圈子头像。",
+                    "type": "string",
+                    "example": "/static/circle.png"
+                },
+                "category": {
+                    "description": "圈子分类。",
+                    "type": "string",
+                    "example": "technology"
+                },
+                "description": {
+                    "description": "圈子描述。",
+                    "type": "string",
+                    "example": "圈子简介"
+                },
+                "joinType": {
+                    "description": "加入方式。",
+                    "type": "string",
+                    "example": "direct"
+                },
+                "name": {
+                    "description": "圈子名称。",
+                    "type": "string",
+                    "example": "Feedora 圈子"
+                },
+                "postPermission": {
+                    "description": "发帖权限。",
+                    "type": "string",
+                    "example": "all"
+                },
+                "rules": {
+                    "description": "圈规说明。",
+                    "type": "string",
+                    "example": "请遵守社区规范"
+                }
+            }
+        },
+        "dto.CreateCommentRequest": {
+            "type": "object",
+            "required": [
+                "content",
+                "postId"
+            ],
+            "properties": {
+                "content": {
+                    "description": "评论内容。",
+                    "type": "string",
+                    "example": "这是一条评论内容"
+                },
+                "postId": {
+                    "description": "帖子 ID。",
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                }
+            }
+        },
+        "dto.CreatePostRequest": {
+            "type": "object",
+            "required": [
+                "content",
+                "title"
+            ],
+            "properties": {
+                "circleId": {
+                    "description": "圈子 ID。",
+                    "type": "integer",
+                    "example": 1
+                },
+                "content": {
+                    "description": "帖子内容。",
+                    "type": "string",
+                    "example": "这里是正文内容"
+                },
+                "images": {
+                    "description": "图片地址列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "/static/post-1.png"
+                    ]
+                },
+                "publishMode": {
+                    "description": "发布模式。",
+                    "type": "string",
+                    "example": "immediate"
+                },
+                "scheduledAt": {
+                    "description": "预约发布时间。",
+                    "type": "string",
+                    "example": "2026-07-08T20:00:00Z"
+                },
+                "tagIds": {
+                    "description": "标签 ID 列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        1
+                    ]
+                },
+                "title": {
+                    "description": "帖子标题。",
+                    "type": "string",
+                    "example": "Feedora 使用体验"
+                },
+                "topicIds": {
+                    "description": "话题 ID 列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        1
+                    ]
+                },
+                "visibility": {
+                    "description": "可见范围。",
+                    "type": "string",
+                    "example": "public"
+                }
+            }
+        },
+        "dto.CreateTagRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "description": "标签描述。",
+                    "type": "string",
+                    "example": "Golang 相关内容"
+                },
+                "name": {
+                    "description": "标签名称。",
+                    "type": "string",
+                    "example": "Go"
+                }
+            }
+        },
+        "dto.CreateTopicRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "coverImage": {
+                    "description": "封面图片。",
+                    "type": "string",
+                    "example": "/static/topic-cover.png"
+                },
+                "description": {
+                    "description": "话题描述。",
+                    "type": "string",
+                    "example": "话题描述"
+                },
+                "isOfficial": {
+                    "description": "是否官方话题。",
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "description": "话题名称。",
+                    "type": "string",
+                    "example": "Feedora 官方话题"
+                }
+            }
+        },
+        "dto.CurrentUserResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.User"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.EmptyData": {
+            "type": "object"
+        },
+        "dto.EmptyResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.EmptyData"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.HotKeywordResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.HotRankItem": {
+            "type": "object",
+            "properties": {
+                "authorName": {
+                    "description": "作者名称。",
+                    "type": "string"
+                },
+                "circleId": {
+                    "description": "圈子 ID。",
+                    "type": "integer"
+                },
+                "commentCount": {
+                    "description": "评论数。",
+                    "type": "integer"
+                },
+                "featuredPostCount": {
+                    "description": "精选帖子数。",
+                    "type": "integer"
+                },
+                "hotScore": {
+                    "description": "热度值。",
+                    "type": "integer"
+                },
+                "likeCount": {
+                    "description": "点赞数。",
+                    "type": "integer"
+                },
+                "memberCount": {
+                    "description": "成员数。",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "目标名称。",
+                    "type": "string"
+                },
+                "participantCount": {
+                    "description": "参与人数。",
+                    "type": "integer"
+                },
+                "postCount": {
+                    "description": "帖子数。",
+                    "type": "integer"
+                },
+                "postId": {
+                    "description": "帖子 ID。",
+                    "type": "integer"
+                },
+                "rank": {
+                    "description": "排名。",
+                    "type": "integer"
+                },
+                "score": {
+                    "description": "排行得分。",
+                    "type": "number"
+                },
+                "targetId": {
+                    "description": "目标 ID。",
+                    "type": "integer"
+                },
+                "title": {
+                    "description": "帖子标题。",
+                    "type": "string"
+                },
+                "topicId": {
+                    "description": "话题 ID。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.HotRankListResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.HotRankItem"
+                    }
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.InteractionResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.InteractionResult"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.InteractionResult": {
+            "type": "object",
+            "properties": {
+                "favoriteCount": {
+                    "description": "收藏数。",
+                    "type": "integer"
+                },
+                "favorited": {
+                    "description": "是否已收藏。",
+                    "type": "boolean"
+                },
+                "likeCount": {
+                    "description": "点赞数。",
+                    "type": "integer"
+                },
+                "liked": {
+                    "description": "是否已点赞。",
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.LoginRequest": {
+            "type": "object",
+            "required": [
+                "account",
+                "password"
+            ],
+            "properties": {
+                "account": {
+                    "description": "登录账号。",
+                    "type": "string",
+                    "example": "feedora"
+                },
+                "password": {
+                    "description": "登录密码。",
+                    "type": "string",
+                    "example": "123456"
+                }
+            }
+        },
+        "dto.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.LoginResult"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.LoginResult": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "description": "访问令牌。",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "当前登录用户。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.User"
+                        }
+                    ]
+                }
+            }
+        },
+        "dto.MuteCircleMemberRequest": {
+            "type": "object",
+            "required": [
+                "duration"
+            ],
+            "properties": {
+                "duration": {
+                    "description": "禁言天数。",
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 7
+                },
+                "reason": {
+                    "description": "禁言原因。",
+                    "type": "string",
+                    "example": "违反圈规"
+                }
+            }
+        },
+        "dto.MyCommentItem": {
+            "type": "object",
+            "properties": {
+                "commentId": {
+                    "description": "评论 ID。",
+                    "type": "integer"
+                },
+                "content": {
+                    "description": "评论内容。",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "likeCount": {
+                    "description": "点赞数量。",
+                    "type": "integer"
+                },
+                "postId": {
+                    "description": "帖子 ID。",
+                    "type": "integer"
+                },
+                "postTitle": {
+                    "description": "帖子标题。",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "评论状态。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.MyCommentPageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_MyCommentItem"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.NotificationItem": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "通知分类。",
+                    "type": "string"
+                },
+                "content": {
+                    "description": "通知内容。",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "notificationId": {
+                    "description": "通知 ID。",
+                    "type": "integer"
+                },
+                "readStatus": {
+                    "description": "已读状态。",
+                    "type": "string"
+                },
+                "targetUrl": {
+                    "description": "跳转链接。",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "通知标题。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.NotificationListResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.NotificationItem"
+                    }
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.PageResult-dto_AdminCircleItem": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AdminCircleItem"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_AdminCommentItem": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AdminCommentItem"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_AdminOperationLogItem": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AdminOperationLogItem"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_AdminPostItem": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AdminPostItem"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_Circle": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Circle"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_CircleMember": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CircleMember"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_MyCommentItem": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.MyCommentItem"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_Post": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Post"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_SearchResult": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SearchResult"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_Topic": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Topic"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PageResult-dto_User": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "description": "列表数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.User"
+                    }
+                },
+                "page": {
+                    "description": "当前页码。",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数量。",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总记录数。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.Post": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "description": "作者信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.UserSummary"
+                        }
+                    ]
+                },
+                "authorId": {
+                    "description": "作者 ID。",
+                    "type": "integer"
+                },
+                "circle": {
+                    "description": "所属圈子信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.CircleBrief"
+                        }
+                    ]
+                },
+                "circleId": {
+                    "description": "所属圈子 ID。",
+                    "type": "integer"
+                },
+                "commentCount": {
+                    "description": "评论数。",
+                    "type": "integer"
+                },
+                "content": {
+                    "description": "Markdown 内容。",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "favoriteCount": {
+                    "description": "收藏数。",
+                    "type": "integer"
+                },
+                "favorited": {
+                    "description": "当前用户是否收藏。",
+                    "type": "boolean"
+                },
+                "followedAuthor": {
+                    "description": "当前用户是否关注作者。",
+                    "type": "boolean"
+                },
+                "hotScore": {
+                    "description": "热度分。",
+                    "type": "integer"
+                },
+                "images": {
+                    "description": "图片列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "isFeatured": {
+                    "description": "是否精选。",
+                    "type": "boolean"
+                },
+                "isSelected": {
+                    "description": "是否已入选。",
+                    "type": "boolean"
+                },
+                "isTop": {
+                    "description": "是否置顶。",
+                    "type": "boolean"
+                },
+                "likeCount": {
+                    "description": "点赞数。",
+                    "type": "integer"
+                },
+                "liked": {
+                    "description": "当前用户是否点赞。",
+                    "type": "boolean"
+                },
+                "postId": {
+                    "description": "帖子 ID。",
+                    "type": "integer"
+                },
+                "postType": {
+                    "description": "帖子类型。",
+                    "type": "string"
+                },
+                "publishedAt": {
+                    "description": "发布时间。",
+                    "type": "string"
+                },
+                "repostComment": {
+                    "description": "转发文案。",
+                    "type": "string"
+                },
+                "repostCount": {
+                    "description": "转发数。",
+                    "type": "integer"
+                },
+                "scheduledAt": {
+                    "description": "预约发布时间。",
+                    "type": "string"
+                },
+                "shareCount": {
+                    "description": "分享数。",
+                    "type": "integer"
+                },
+                "sourcePostId": {
+                    "description": "来源帖子 ID。",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "帖子状态。",
+                    "type": "string"
+                },
+                "summary": {
+                    "description": "摘要内容。",
+                    "type": "string"
+                },
+                "tags": {
+                    "description": "标签列表。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TagSummary"
+                    }
+                },
+                "title": {
+                    "description": "帖子标题。",
+                    "type": "string"
+                },
+                "topics": {
+                    "description": "话题列表。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TopicSummary"
+                    }
+                },
+                "updatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                },
+                "viewCount": {
+                    "description": "浏览数。",
+                    "type": "integer"
+                },
+                "visibility": {
+                    "description": "可见性。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PostPageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_Post"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.PostResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.Post"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.RankingItem": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "展示头像。",
+                    "type": "string"
+                },
+                "isCurrentUser": {
+                    "description": "是否当前用户。",
+                    "type": "boolean"
+                },
+                "level": {
+                    "description": "用户等级。",
+                    "type": "integer"
+                },
+                "levelName": {
+                    "description": "等级名称。",
+                    "type": "string"
+                },
+                "likeReceivedCount": {
+                    "description": "获赞数。",
+                    "type": "integer"
+                },
+                "memberCount": {
+                    "description": "成员数。",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "展示名称。",
+                    "type": "string"
+                },
+                "points": {
+                    "description": "积分。",
+                    "type": "integer"
+                },
+                "postCount": {
+                    "description": "发帖数。",
+                    "type": "integer"
+                },
+                "rank": {
+                    "description": "排名。",
+                    "type": "integer"
+                },
+                "score": {
+                    "description": "排行得分。",
+                    "type": "number"
+                },
+                "targetId": {
+                    "description": "目标 ID。",
+                    "type": "integer"
+                },
+                "targetType": {
+                    "description": "目标类型。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RankingListResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.RankingItem"
+                    }
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "account",
+                "password"
+            ],
+            "properties": {
+                "account": {
+                    "description": "注册账号。",
+                    "type": "string",
+                    "example": "feedora"
+                },
+                "confirmPassword": {
+                    "description": "确认密码。",
+                    "type": "string",
+                    "example": "123456"
+                },
+                "nickname": {
+                    "description": "用户昵称。",
+                    "type": "string",
+                    "example": "Feedora 用户"
+                },
+                "password": {
+                    "description": "登录密码。",
+                    "type": "string",
+                    "example": "123456"
+                }
+            }
+        },
+        "dto.ReplyCommentRequest": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "description": "回复内容。",
+                    "type": "string",
+                    "example": "这是一条回复内容"
+                },
+                "replyToUserId": {
+                    "description": "被回复用户 ID。",
+                    "type": "integer",
+                    "example": 2
+                }
+            }
+        },
+        "dto.RepostPostRequest": {
+            "type": "object",
+            "properties": {
+                "repostComment": {
+                    "description": "转发附言。",
+                    "type": "string",
+                    "example": "转发一下这篇内容"
+                }
+            }
+        },
+        "dto.SearchResult": {
+            "type": "object",
+            "properties": {
+                "circle": {
+                    "description": "圈子信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.Circle"
+                        }
+                    ]
+                },
+                "circleId": {
+                    "description": "圈子 ID。",
+                    "type": "integer"
+                },
+                "displayName": {
+                    "description": "展示标题。",
+                    "type": "string"
+                },
+                "post": {
+                    "description": "帖子信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.Post"
+                        }
+                    ]
+                },
+                "postId": {
+                    "description": "帖子 ID。",
+                    "type": "integer"
+                },
+                "resultType": {
+                    "description": "结果类型。",
+                    "type": "string"
+                },
+                "topic": {
+                    "description": "话题信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.Topic"
+                        }
+                    ]
+                },
+                "topicId": {
+                    "description": "话题 ID。",
+                    "type": "integer"
+                },
+                "user": {
+                    "description": "用户信息。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.User"
+                        }
+                    ]
+                },
+                "userId": {
+                    "description": "用户 ID。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.SearchResultPageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_SearchResult"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.SearchSuggestResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SuggestItem"
+                    }
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.SetCircleMemberRoleRequest": {
+            "type": "object",
+            "required": [
+                "role"
+            ],
+            "properties": {
+                "role": {
+                    "description": "成员角色。",
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "dto.SuggestItem": {
+            "type": "object",
+            "properties": {
+                "targetId": {
+                    "description": "目标 ID。",
+                    "type": "integer"
+                },
+                "targetUrl": {
+                    "description": "跳转链接。",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "联想标题。",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "联想类型。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TagListResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ContentTag"
+                    }
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.TagResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ContentTag"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.TagSummary": {
+            "type": "object",
+            "properties": {
+                "tagId": {
+                    "description": "标签 ID。",
+                    "type": "integer"
+                },
+                "tagName": {
+                    "description": "标签名称。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.Task": {
+            "type": "object",
+            "properties": {
+                "actionText": {
+                    "description": "操作文案。",
+                    "type": "string"
+                },
+                "actionUrl": {
+                    "description": "操作跳转链接。",
+                    "type": "string"
+                },
+                "currentValue": {
+                    "description": "当前进度值。",
+                    "type": "integer"
+                },
+                "description": {
+                    "description": "任务描述。",
+                    "type": "string"
+                },
+                "rewardPoints": {
+                    "description": "奖励积分。",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "任务状态。",
+                    "type": "string"
+                },
+                "targetValue": {
+                    "description": "目标值。",
+                    "type": "integer"
+                },
+                "taskId": {
+                    "description": "任务 ID。",
+                    "type": "integer"
+                },
+                "title": {
+                    "description": "任务标题。",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "任务类型。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TaskListResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Task"
+                    }
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.Topic": {
+            "type": "object",
+            "properties": {
+                "coverImage": {
+                    "description": "封面图片。",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "话题描述。",
+                    "type": "string"
+                },
+                "isOfficial": {
+                    "description": "是否官方。",
+                    "type": "boolean"
+                },
+                "isRecommended": {
+                    "description": "是否推荐。",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "话题名称。",
+                    "type": "string"
+                },
+                "participantCount": {
+                    "description": "参与人数。",
+                    "type": "integer"
+                },
+                "postCount": {
+                    "description": "帖子数量。",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "话题状态。",
+                    "type": "string"
+                },
+                "topicId": {
+                    "description": "话题 ID。",
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TopicPageResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_Topic"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.TopicResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.Topic"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.TopicSummary": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "话题名称。",
+                    "type": "string"
+                },
+                "topicId": {
+                    "description": "话题 ID。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.UpdatePostRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "帖子内容。",
+                    "type": "string",
+                    "example": "更新后的正文内容"
+                },
+                "images": {
+                    "description": "图片地址列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "/static/post-1.png"
+                    ]
+                },
+                "title": {
+                    "description": "帖子标题。",
+                    "type": "string",
+                    "example": "更新后的标题"
+                },
+                "visibility": {
+                    "description": "可见范围。",
+                    "type": "string",
+                    "example": "private"
+                }
+            }
+        },
+        "dto.UpdateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "头像地址。",
+                    "type": "string",
+                    "example": "/static/avatar.png"
+                },
+                "bio": {
+                    "description": "个性签名。",
+                    "type": "string",
+                    "example": "热爱分享的 Feedora 用户"
+                },
+                "nickname": {
+                    "description": "用户昵称。",
+                    "type": "string",
+                    "example": "新的昵称"
+                }
+            }
+        },
+        "dto.UpdateTagRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "标签描述。",
+                    "type": "string",
+                    "example": "Golang 内容"
+                },
+                "name": {
+                    "description": "标签名称。",
+                    "type": "string",
+                    "example": "Go"
+                },
+                "status": {
+                    "description": "标签状态。",
+                    "type": "string",
+                    "example": "enabled"
+                }
+            }
+        },
+        "dto.UpdateTopicRequest": {
+            "type": "object",
+            "properties": {
+                "coverImage": {
+                    "description": "封面图片。",
+                    "type": "string",
+                    "example": "/static/topic.png"
+                },
+                "description": {
+                    "description": "话题描述。",
+                    "type": "string",
+                    "example": "更新后的话题描述"
+                },
+                "isOfficial": {
+                    "description": "是否官方话题。",
+                    "type": "boolean",
+                    "example": true
+                },
+                "isRecommended": {
+                    "description": "是否推荐。",
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "description": "话题名称。",
+                    "type": "string",
+                    "example": "Feedora 官方话题"
+                },
+                "status": {
+                    "description": "话题状态。",
+                    "type": "string",
+                    "example": "enabled"
+                }
+            }
+        },
+        "dto.UploadResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.UploadResult"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.UploadResult": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "description": "原始文件名。",
+                    "type": "string"
+                },
+                "mimeType": {
+                    "description": "文件 MIME 类型。",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "文件大小。",
+                    "type": "integer"
+                },
+                "url": {
+                    "description": "文件访问地址。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.User": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "description": "登录账号。",
+                    "type": "string"
+                },
+                "avatar": {
+                    "description": "头像地址。",
+                    "type": "string"
+                },
+                "badgeCount": {
+                    "description": "勋章数量。",
+                    "type": "integer"
+                },
+                "bio": {
+                    "description": "个性签名。",
+                    "type": "string"
+                },
+                "checkedInToday": {
+                    "description": "今日是否已签到。",
+                    "type": "boolean"
+                },
+                "commentCount": {
+                    "description": "评论数。",
+                    "type": "integer"
+                },
+                "continuousCheckInDays": {
+                    "description": "连续签到天数。",
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "description": "创建时间。",
+                    "type": "string"
+                },
+                "experience": {
+                    "description": "当前经验值。",
+                    "type": "integer"
+                },
+                "followerCount": {
+                    "description": "粉丝数。",
+                    "type": "integer"
+                },
+                "followingCount": {
+                    "description": "关注数。",
+                    "type": "integer"
+                },
+                "level": {
+                    "description": "用户等级。",
+                    "type": "integer"
+                },
+                "levelName": {
+                    "description": "等级名称。",
+                    "type": "string"
+                },
+                "likeReceivedCount": {
+                    "description": "获赞数。",
+                    "type": "integer"
+                },
+                "nextLevelExperience": {
+                    "description": "下一等级所需经验。",
+                    "type": "integer"
+                },
+                "nickname": {
+                    "description": "用户昵称。",
+                    "type": "string"
+                },
+                "points": {
+                    "description": "当前积分。",
+                    "type": "integer"
+                },
+                "postCount": {
+                    "description": "发帖数。",
+                    "type": "integer"
+                },
+                "role": {
+                    "description": "用户角色。",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "用户状态。",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "更新时间。",
+                    "type": "string"
+                },
+                "userId": {
+                    "description": "用户 ID。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.UserListResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PageResult-dto_User"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.UserResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务状态码。",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "业务数据。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.User"
+                        }
+                    ]
+                },
+                "message": {
+                    "description": "业务提示信息。",
+                    "type": "string",
+                    "example": "success"
+                },
+                "timestamp": {
+                    "description": "响应时间。",
+                    "type": "string",
+                    "example": "2026-07-08T12:00:00Z"
+                },
+                "traceId": {
+                    "description": "链路追踪 ID。",
+                    "type": "string",
+                    "example": "trace-1234567890"
+                }
+            }
+        },
+        "dto.UserSummary": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "头像地址。",
+                    "type": "string"
+                },
+                "bio": {
+                    "description": "个性签名。",
+                    "type": "string"
+                },
+                "level": {
+                    "description": "用户等级。",
+                    "type": "integer"
+                },
+                "levelName": {
+                    "description": "等级名称。",
+                    "type": "string"
+                },
+                "nickname": {
+                    "description": "用户昵称。",
+                    "type": "string"
+                },
+                "userId": {
+                    "description": "用户 ID。",
+                    "type": "integer"
+                }
+            }
+        },
+        "response.Body": {
             "type": "object",
             "properties": {
                 "code": {

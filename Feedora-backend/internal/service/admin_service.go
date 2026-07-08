@@ -138,17 +138,25 @@ func (s *AdminService) CreateTopic(in dto.CreateTopicRequest) (*dto.Topic, error
 }
 
 // UpdateTopic 更新话题（仅允许白名单字段）。
-func (s *AdminService) UpdateTopic(id int64, in map[string]any) (*dto.Topic, error) {
-	allowed := map[string]string{
-		"name": "name", "description": "description",
-		"isOfficial": "is_official", "isRecommended": "is_recommended",
-		"coverImage": "cover_url", "status": "status",
-	}
+func (s *AdminService) UpdateTopic(id int64, in dto.UpdateTopicRequest) (*dto.Topic, error) {
 	updates := map[string]any{"updated_at": time.Now()}
-	for k, v := range in {
-		if col, ok := allowed[k]; ok {
-			updates[col] = v
-		}
+	if in.Name != nil {
+		updates["name"] = *in.Name
+	}
+	if in.Description != nil {
+		updates["description"] = *in.Description
+	}
+	if in.IsOfficial != nil {
+		updates["is_official"] = *in.IsOfficial
+	}
+	if in.IsRecommended != nil {
+		updates["is_recommended"] = *in.IsRecommended
+	}
+	if in.CoverImage != nil {
+		updates["cover_url"] = *in.CoverImage
+	}
+	if in.Status != nil {
+		updates["status"] = *in.Status
 	}
 	if err := s.topics.Update(id, updates); err != nil {
 		return nil, errs.ErrInternal

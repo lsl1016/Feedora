@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
-	errs "github.com/feedora/backend/pkg/errors"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -22,53 +21,51 @@ func NewPostAPI(svc *service.PostService) *PostAPI {
 // @Summary  获取帖子列表
 // @Tags     帖子
 // @Produce  json
-// @Param    feedType       query  string  false  "信息流类型"
-// @Param    sort           query  string  false  "排序方式"
-// @Param    status         query  string  false  "状态"
-// @Param    keyword        query  string  false  "搜索关键词"
-// @Param    tagId          query  int     false  "标签ID"
-// @Param    circleId       query  int     false  "圈子ID"
-// @Param    topicId        query  int     false  "话题ID"
-// @Param    authorId       query  int     false  "作者ID"
-// @Param    includeHidden  query  string  false  "是否包含隐藏帖子"
-// @Param    page           query  int     false  "页码"
-// @Param    pageSize       query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.PostListQuery  false  "帖子列表查询参数"
+// @Success  200  {object}  dto.PostPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts [get]
 func (h *PostAPI) List(c *gin.Context) {
-	page, size := pageParams(c)
+	var req dto.PostListQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
 	list, total, err := h.svc.List(service.ListFilter{
-		FeedType:      c.Query("feedType"),
-		Sort:          c.Query("sort"),
-		Status:        c.Query("status"),
-		Keyword:       c.Query("keyword"),
-		TagID:         queryID(c, "tagId"),
-		CircleID:      queryID(c, "circleId"),
-		TopicID:       queryID(c, "topicId"),
-		AuthorID:      queryID(c, "authorId"),
-		IncludeHidden: c.Query("includeHidden") == "true",
+		FeedType:      req.FeedType,
+		Sort:          req.Sort,
+		Status:        req.Status,
+		Keyword:       req.Keyword,
+		TagID:         req.TagID,
+		CircleID:      req.CircleID,
+		TopicID:       req.TopicID,
+		AuthorID:      req.AuthorID,
+		IncludeHidden: req.IncludeHidden,
 		ViewerID:      middleware.CurrentUserID(c),
-		Page:          page,
-		PageSize:      size,
+		Page:          req.Page,
+		PageSize:      req.PageSize,
 	})
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }
 
 // Get 获取帖子详情
 // @Summary  获取帖子详情
 // @Tags     帖子
 // @Produce  json
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.PostResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts/{postId} [get]
 func (h *PostAPI) Get(c *gin.Context) {
-	res, err := h.svc.Get(paramID(c, "postId"), middleware.CurrentUserID(c))
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.Get(req.PostID, middleware.CurrentUserID(c))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -83,13 +80,12 @@ func (h *PostAPI) Get(c *gin.Context) {
 // @Produce  json
 // @Security BearerAuth
 // @Param    body  body  dto.CreatePostRequest  true  "创建帖子请求体"
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.PostResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts [post]
 func (h *PostAPI) Create(c *gin.Context) {
 	var in dto.CreatePostRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		response.Fail(c, errs.ErrParams)
+	if !bindJSON(c, &in) {
 		return
 	}
 	res, err := h.svc.Create(middleware.CurrentUserID(c), in)
@@ -106,18 +102,21 @@ func (h *PostAPI) Create(c *gin.Context) {
 // @Accept   json
 // @Produce  json
 // @Security BearerAuth
-// @Param    postId  path  int  true  "帖子ID"
+// @Param    postId  path  dto.PostIDURI          true  "帖子路径参数"
 // @Param    body    body  dto.UpdatePostRequest  true  "更新帖子请求体"
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.PostResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts/{postId} [put]
 func (h *PostAPI) Update(c *gin.Context) {
-	var in dto.UpdatePostRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		response.Fail(c, errs.ErrParams)
+	var uri dto.PostIDURI
+	if !bindURI(c, &uri) {
 		return
 	}
-	res, err := h.svc.Update(paramID(c, "postId"), middleware.CurrentUserID(c), in)
+	var in dto.UpdatePostRequest
+	if !bindJSON(c, &in) {
+		return
+	}
+	res, err := h.svc.Update(uri.PostID, middleware.CurrentUserID(c), in)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -130,12 +129,16 @@ func (h *PostAPI) Update(c *gin.Context) {
 // @Tags     帖子
 // @Produce  json
 // @Security BearerAuth
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts/{postId}/hide [put]
 func (h *PostAPI) Hide(c *gin.Context) {
-	if err := h.svc.SetHidden(paramID(c, "postId"), middleware.CurrentUserID(c), true); err != nil {
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.SetHidden(req.PostID, middleware.CurrentUserID(c), true); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -147,12 +150,16 @@ func (h *PostAPI) Hide(c *gin.Context) {
 // @Tags     帖子
 // @Produce  json
 // @Security BearerAuth
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts/{postId}/unhide [put]
 func (h *PostAPI) Unhide(c *gin.Context) {
-	if err := h.svc.SetHidden(paramID(c, "postId"), middleware.CurrentUserID(c), false); err != nil {
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.SetHidden(req.PostID, middleware.CurrentUserID(c), false); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -164,13 +171,17 @@ func (h *PostAPI) Unhide(c *gin.Context) {
 // @Tags     帖子
 // @Produce  json
 // @Security BearerAuth
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts/{postId} [delete]
 func (h *PostAPI) Delete(c *gin.Context) {
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
 	isAdmin := middleware.CurrentRole(c) == "admin"
-	if err := h.svc.Delete(paramID(c, "postId"), middleware.CurrentUserID(c), isAdmin); err != nil {
+	if err := h.svc.Delete(req.PostID, middleware.CurrentUserID(c), isAdmin); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -182,12 +193,16 @@ func (h *PostAPI) Delete(c *gin.Context) {
 // @Tags     帖子
 // @Produce  json
 // @Security BearerAuth
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts/{postId}/share [post]
 func (h *PostAPI) Share(c *gin.Context) {
-	if err := h.svc.Share(paramID(c, "postId")); err != nil {
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.Share(req.PostID); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -200,16 +215,21 @@ func (h *PostAPI) Share(c *gin.Context) {
 // @Accept   json
 // @Produce  json
 // @Security BearerAuth
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    postId  path  dto.PostIDURI           true  "帖子路径参数"
+// @Param    body    body  dto.RepostPostRequest   true  "转发请求体"
+// @Success  200  {object}  dto.PostResponse
 // @Failure  400  {object}  response.Body
 // @Router   /posts/{postId}/repost [post]
 func (h *PostAPI) Repost(c *gin.Context) {
-	var body struct {
-		RepostComment string `json:"repostComment"`
+	var uri dto.PostIDURI
+	if !bindURI(c, &uri) {
+		return
 	}
-	_ = c.ShouldBindJSON(&body)
-	res, err := h.svc.Repost(paramID(c, "postId"), middleware.CurrentUserID(c), body.RepostComment)
+	var body dto.RepostPostRequest
+	if !bindJSON(c, &body) {
+		return
+	}
+	res, err := h.svc.Repost(uri.PostID, middleware.CurrentUserID(c), body.RepostComment)
 	if err != nil {
 		response.Fail(c, err)
 		return

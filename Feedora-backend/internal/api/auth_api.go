@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
-	errs "github.com/feedora/backend/pkg/errors"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -24,13 +23,12 @@ func NewAuthAPI(svc *service.AuthService) *AuthAPI {
 // @Accept   json
 // @Produce  json
 // @Param    body  body  dto.LoginRequest  true  "登录请求体"
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.LoginResponse
 // @Failure  400  {object}  response.Body
 // @Router   /auth/login [post]
 func (h *AuthAPI) Login(c *gin.Context) {
 	var in dto.LoginRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		response.Fail(c, errs.ErrParams)
+	if !bindJSON(c, &in) {
 		return
 	}
 	res, err := h.svc.Login(in.Account, in.Password)
@@ -47,13 +45,12 @@ func (h *AuthAPI) Login(c *gin.Context) {
 // @Accept   json
 // @Produce  json
 // @Param    body  body  dto.RegisterRequest  true  "注册请求体"
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.LoginResponse
 // @Failure  400  {object}  response.Body
 // @Router   /auth/register [post]
 func (h *AuthAPI) Register(c *gin.Context) {
 	var in dto.RegisterRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		response.Fail(c, errs.ErrParams)
+	if !bindJSON(c, &in) {
 		return
 	}
 	res, err := h.svc.Register(in)
@@ -69,7 +66,7 @@ func (h *AuthAPI) Register(c *gin.Context) {
 // @Tags     认证
 // @Produce  json
 // @Security BearerAuth
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.CurrentUserResponse
 // @Failure  400  {object}  response.Body
 // @Router   /auth/me [get]
 func (h *AuthAPI) Me(c *gin.Context) {
@@ -86,7 +83,7 @@ func (h *AuthAPI) Me(c *gin.Context) {
 // @Tags     认证
 // @Produce  json
 // @Security BearerAuth
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Router   /auth/logout [post]
 func (h *AuthAPI) Logout(c *gin.Context) {

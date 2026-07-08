@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
 	"github.com/feedora/backend/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -19,15 +20,16 @@ func NewRankAPI(svc *service.RankService) *RankAPI {
 // @Summary  热门榜单
 // @Tags     榜单
 // @Produce  json
-// @Param    rankType   query  string  false  "榜单类型"
-// @Param    timeRange  query  string  false  "时间范围"
-// @Param    page       query  int     false  "页码"
-// @Param    pageSize   query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.HotRankQuery  false  "热门榜单查询参数"
+// @Success  200  {object}  dto.HotRankListResponse
 // @Failure  400  {object}  response.Body
 // @Router   /hot/ranks [get]
 func (h *RankAPI) HotRanks(c *gin.Context) {
-	page, size := pageParams(c)
-	list := h.svc.HotRanks(c.Query("rankType"), c.Query("timeRange"), page, size)
+	var req dto.HotRankQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
+	list := h.svc.HotRanks(req.RankType, req.TimeRange, req.Page, req.PageSize)
 	response.OK(c, list)
 }

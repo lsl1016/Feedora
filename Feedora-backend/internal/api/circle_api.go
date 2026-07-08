@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
-	errs "github.com/feedora/backend/pkg/errors"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -22,38 +21,42 @@ func NewCircleAPI(svc *service.CircleService) *CircleAPI {
 // @Summary  获取圈子列表
 // @Tags     圈子
 // @Produce  json
-// @Param    scope     query  string  false  "范围"
-// @Param    keyword   query  string  false  "关键词"
-// @Param    category  query  string  false  "分类"
-// @Param    sort      query  string  false  "排序"
-// @Param    page      query  int     false  "页码"
-// @Param    pageSize  query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.CircleListQuery  false  "圈子列表查询参数"
+// @Success  200  {object}  dto.CirclePageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /circles [get]
 func (h *CircleAPI) List(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.List(
-		c.DefaultQuery("scope", "all"), c.Query("keyword"), c.Query("category"), c.Query("sort"),
-		middleware.CurrentUserID(c), page, size,
-	)
+	var req dto.CircleListQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
+	scope := req.Scope
+	if scope == "" {
+		scope = "all"
+	}
+	list, total, err := h.svc.List(scope, req.Keyword, req.Category, req.Sort, middleware.CurrentUserID(c), req.Page, req.PageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }
 
 // Get 获取圈子详情
 // @Summary  获取圈子详情
 // @Tags     圈子
 // @Produce  json
-// @Param    circleId  path  int  true  "圈子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.CircleIDURI  true  "圈子路径参数"
+// @Success  200  {object}  dto.CircleResponse
 // @Failure  400  {object}  response.Body
 // @Router   /circles/{circleId} [get]
 func (h *CircleAPI) Get(c *gin.Context) {
-	res, err := h.svc.Get(paramID(c, "circleId"), middleware.CurrentUserID(c))
+	var req dto.CircleIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.Get(req.CircleID, middleware.CurrentUserID(c))
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -67,14 +70,13 @@ func (h *CircleAPI) Get(c *gin.Context) {
 // @Accept   json
 // @Produce  json
 // @Param    body  body  dto.CreateCircleRequest  true  "创建圈子请求体"
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.CircleResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /circles [post]
 func (h *CircleAPI) Create(c *gin.Context) {
 	var in dto.CreateCircleRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		response.Fail(c, errs.ErrParams)
+	if !bindJSON(c, &in) {
 		return
 	}
 	res, err := h.svc.Create(middleware.CurrentUserID(c), in)
@@ -89,13 +91,17 @@ func (h *CircleAPI) Create(c *gin.Context) {
 // @Summary  加入圈子
 // @Tags     圈子
 // @Produce  json
-// @Param    circleId  path  int  true  "圈子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.CircleIDURI  true  "圈子路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /circles/{circleId}/join [post]
 func (h *CircleAPI) Join(c *gin.Context) {
-	if err := h.svc.Join(paramID(c, "circleId"), middleware.CurrentUserID(c)); err != nil {
+	var req dto.CircleIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.Join(req.CircleID, middleware.CurrentUserID(c)); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -106,13 +112,17 @@ func (h *CircleAPI) Join(c *gin.Context) {
 // @Summary  退出圈子
 // @Tags     圈子
 // @Produce  json
-// @Param    circleId  path  int  true  "圈子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.CircleIDURI  true  "圈子路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /circles/{circleId}/leave [post]
 func (h *CircleAPI) Leave(c *gin.Context) {
-	if err := h.svc.Leave(paramID(c, "circleId"), middleware.CurrentUserID(c)); err != nil {
+	var req dto.CircleIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.Leave(req.CircleID, middleware.CurrentUserID(c)); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -123,41 +133,54 @@ func (h *CircleAPI) Leave(c *gin.Context) {
 // @Summary  获取圈子成员列表
 // @Tags     圈子
 // @Produce  json
-// @Param    circleId  path   int  true   "圈子ID"
-// @Param    page      query  int  false  "页码"
-// @Param    pageSize  query  int  false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    circleId  path   dto.CircleIDURI  true   "圈子路径参数"
+// @Param    req       query  dto.PageRequest  false  "分页查询参数"
+// @Success  200  {object}  dto.CircleMemberPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /circles/{circleId}/members [get]
 func (h *CircleAPI) Members(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.Members(paramID(c, "circleId"), page, size)
+	var uri dto.CircleIDURI
+	if !bindURI(c, &uri) {
+		return
+	}
+	var req dto.PageRequest
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req)
+	list, total, err := h.svc.Members(uri.CircleID, req.Page, req.PageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }
 
 // Posts 获取圈子帖子列表
 // @Summary  获取圈子帖子列表
 // @Tags     圈子
 // @Produce  json
-// @Param    circleId  path   int     true   "圈子ID"
-// @Param    sort      query  string  false  "排序"
-// @Param    page      query  int     false  "页码"
-// @Param    pageSize  query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    circleId  path   dto.CircleIDURI         true   "圈子路径参数"
+// @Param    req       query  dto.PostListByTopicQuery false  "帖子列表查询参数"
+// @Success  200  {object}  dto.PostPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /circles/{circleId}/posts [get]
 func (h *CircleAPI) Posts(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.Posts(paramID(c, "circleId"), middleware.CurrentUserID(c), c.Query("sort"), page, size)
+	var uri dto.CircleIDURI
+	if !bindURI(c, &uri) {
+		return
+	}
+	var req dto.PostListByTopicQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
+	list, total, err := h.svc.Posts(uri.CircleID, middleware.CurrentUserID(c), req.Sort, req.Page, req.PageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }
 
 // SetRole 设置成员角色
@@ -165,18 +188,22 @@ func (h *CircleAPI) Posts(c *gin.Context) {
 // @Tags     圈子
 // @Accept   json
 // @Produce  json
-// @Param    circleId  path  int  true  "圈子ID"
-// @Param    userId    path  int  true  "用户ID"
-// @Success  200  {object}  response.Body
+// @Param    path  path  dto.UserAndCircleURI            true  "成员路径参数"
+// @Param    body  body  dto.SetCircleMemberRoleRequest  true  "设置角色请求体"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /circles/{circleId}/members/{userId}/role [put]
 func (h *CircleAPI) SetRole(c *gin.Context) {
-	var in struct {
-		Role string `json:"role"`
+	var uri dto.UserAndCircleURI
+	if !bindURI(c, &uri) {
+		return
 	}
-	_ = c.ShouldBindJSON(&in)
-	if err := h.svc.SetRole(paramID(c, "circleId"), paramID(c, "userId"), middleware.CurrentUserID(c), in.Role); err != nil {
+	var in dto.SetCircleMemberRoleRequest
+	if !bindJSON(c, &in) {
+		return
+	}
+	if err := h.svc.SetRole(uri.CircleID, uri.UserID, middleware.CurrentUserID(c), in.Role); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -188,19 +215,22 @@ func (h *CircleAPI) SetRole(c *gin.Context) {
 // @Tags     圈子
 // @Accept   json
 // @Produce  json
-// @Param    circleId  path  int  true  "圈子ID"
-// @Param    userId    path  int  true  "用户ID"
-// @Success  200  {object}  response.Body
+// @Param    path  path  dto.UserAndCircleURI          true  "成员路径参数"
+// @Param    body  body  dto.MuteCircleMemberRequest   true  "禁言请求体"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /circles/{circleId}/members/{userId}/mute [put]
 func (h *CircleAPI) Mute(c *gin.Context) {
-	var in struct {
-		Duration int    `json:"duration"`
-		Reason   string `json:"reason"`
+	var uri dto.UserAndCircleURI
+	if !bindURI(c, &uri) {
+		return
 	}
-	_ = c.ShouldBindJSON(&in)
-	if err := h.svc.Mute(paramID(c, "circleId"), paramID(c, "userId"), middleware.CurrentUserID(c), in.Duration, in.Reason); err != nil {
+	var in dto.MuteCircleMemberRequest
+	if !bindJSON(c, &in) {
+		return
+	}
+	if err := h.svc.Mute(uri.CircleID, uri.UserID, middleware.CurrentUserID(c), in.Duration, in.Reason); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -211,14 +241,17 @@ func (h *CircleAPI) Mute(c *gin.Context) {
 // @Summary  解除禁言成员
 // @Tags     圈子
 // @Produce  json
-// @Param    circleId  path  int  true  "圈子ID"
-// @Param    userId    path  int  true  "用户ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.UserAndCircleURI  true  "成员路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /circles/{circleId}/members/{userId}/unmute [put]
 func (h *CircleAPI) Unmute(c *gin.Context) {
-	if err := h.svc.Unmute(paramID(c, "circleId"), paramID(c, "userId"), middleware.CurrentUserID(c)); err != nil {
+	var req dto.UserAndCircleURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.Unmute(req.CircleID, req.UserID, middleware.CurrentUserID(c)); err != nil {
 		response.Fail(c, err)
 		return
 	}
@@ -229,14 +262,17 @@ func (h *CircleAPI) Unmute(c *gin.Context) {
 // @Summary  移除圈子成员
 // @Tags     圈子
 // @Produce  json
-// @Param    circleId  path  int  true  "圈子ID"
-// @Param    userId    path  int  true  "用户ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.UserAndCircleURI  true  "成员路径参数"
+// @Success  200  {object}  dto.EmptyResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /circles/{circleId}/members/{userId} [delete]
 func (h *CircleAPI) Remove(c *gin.Context) {
-	if err := h.svc.Remove(paramID(c, "circleId"), paramID(c, "userId"), middleware.CurrentUserID(c)); err != nil {
+	var req dto.UserAndCircleURI
+	if !bindURI(c, &req) {
+		return
+	}
+	if err := h.svc.Remove(req.CircleID, req.UserID, middleware.CurrentUserID(c)); err != nil {
 		response.Fail(c, err)
 		return
 	}

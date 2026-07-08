@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
@@ -20,7 +21,7 @@ func NewTagAPI(svc *service.TagService) *TagAPI {
 // @Summary  标签列表
 // @Tags     标签
 // @Produce  json
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.TagListResponse
 // @Failure  400  {object}  response.Body
 // @Router   /tags [get]
 func (h *TagAPI) List(c *gin.Context) {
@@ -36,12 +37,16 @@ func (h *TagAPI) List(c *gin.Context) {
 // @Summary  标签详情
 // @Tags     标签
 // @Produce  json
-// @Param    tagId  path  int  true  "标签ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.TagIDURI  true  "标签路径参数"
+// @Success  200  {object}  dto.TagResponse
 // @Failure  400  {object}  response.Body
 // @Router   /tags/{tagId} [get]
 func (h *TagAPI) Get(c *gin.Context) {
-	res, err := h.svc.Get(paramID(c, "tagId"))
+	var req dto.TagIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.Get(req.TagID)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -53,19 +58,25 @@ func (h *TagAPI) Get(c *gin.Context) {
 // @Summary  标签下的帖子列表
 // @Tags     标签
 // @Produce  json
-// @Param    tagId     path   int     true   "标签ID"
-// @Param    sort      query  string  false  "排序方式"
-// @Param    page      query  int     false  "页码"
-// @Param    pageSize  query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    tagId  path   dto.TagIDURI      true   "标签路径参数"
+// @Param    req    query  dto.TagPostsQuery false  "帖子列表查询参数"
+// @Success  200  {object}  dto.PostPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /tags/{tagId}/posts [get]
 func (h *TagAPI) Posts(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.Posts(paramID(c, "tagId"), middleware.CurrentUserID(c), c.Query("sort"), page, size)
+	var uri dto.TagIDURI
+	if !bindURI(c, &uri) {
+		return
+	}
+	var req dto.TagPostsQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
+	list, total, err := h.svc.Posts(uri.TagID, middleware.CurrentUserID(c), req.Sort, req.Page, req.PageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }

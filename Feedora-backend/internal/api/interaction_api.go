@@ -21,13 +21,17 @@ func NewInteractionAPI(svc *service.InteractionService) *InteractionAPI {
 // @Summary  点赞帖子
 // @Tags     互动
 // @Produce  json
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.InteractionResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /posts/{postId}/like [post]
 func (h *InteractionAPI) Like(c *gin.Context) {
-	res, err := h.svc.SetLike(paramID(c, "postId"), middleware.CurrentUserID(c), true)
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.SetLike(req.PostID, middleware.CurrentUserID(c), true)
 	h.reply(c, res, err)
 }
 
@@ -35,13 +39,17 @@ func (h *InteractionAPI) Like(c *gin.Context) {
 // @Summary  取消点赞帖子
 // @Tags     互动
 // @Produce  json
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.InteractionResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /posts/{postId}/like [delete]
 func (h *InteractionAPI) Unlike(c *gin.Context) {
-	res, err := h.svc.SetLike(paramID(c, "postId"), middleware.CurrentUserID(c), false)
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.SetLike(req.PostID, middleware.CurrentUserID(c), false)
 	h.reply(c, res, err)
 }
 
@@ -49,13 +57,17 @@ func (h *InteractionAPI) Unlike(c *gin.Context) {
 // @Summary  收藏帖子
 // @Tags     互动
 // @Produce  json
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.InteractionResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /posts/{postId}/favorite [post]
 func (h *InteractionAPI) Favorite(c *gin.Context) {
-	res, err := h.svc.SetFavorite(paramID(c, "postId"), middleware.CurrentUserID(c), true)
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.SetFavorite(req.PostID, middleware.CurrentUserID(c), true)
 	h.reply(c, res, err)
 }
 
@@ -63,13 +75,17 @@ func (h *InteractionAPI) Favorite(c *gin.Context) {
 // @Summary  取消收藏帖子
 // @Tags     互动
 // @Produce  json
-// @Param    postId  path  int  true  "帖子ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.PostIDURI  true  "帖子路径参数"
+// @Success  200  {object}  dto.InteractionResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /posts/{postId}/favorite [delete]
 func (h *InteractionAPI) Unfavorite(c *gin.Context) {
-	res, err := h.svc.SetFavorite(paramID(c, "postId"), middleware.CurrentUserID(c), false)
+	var req dto.PostIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.SetFavorite(req.PostID, middleware.CurrentUserID(c), false)
 	h.reply(c, res, err)
 }
 

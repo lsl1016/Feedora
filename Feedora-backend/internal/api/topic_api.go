@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
@@ -20,15 +21,23 @@ func NewTopicAPI(svc *service.TopicService) *TopicAPI {
 // @Summary  话题列表
 // @Tags     话题
 // @Produce  json
-// @Param    tab       query  string  false  "分类标签（默认 all）"
-// @Param    page      query  int     false  "页码"
-// @Param    pageSize  query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.TopicListQuery  false  "话题列表请求参数"
+// @Success  200  {object}  dto.TopicPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /topics [get]
 func (h *TopicAPI) List(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.List(c.DefaultQuery("tab", "all"), page, size)
+	var req dto.TopicListQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	page, size := req.Page, req.PageSize
+	normalizePageRequest(&req.PageRequest)
+	page, size = req.Page, req.PageSize
+	tab := req.Tab
+	if tab == "" {
+		tab = "all"
+	}
+	list, total, err := h.svc.List(tab, page, size)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -40,12 +49,16 @@ func (h *TopicAPI) List(c *gin.Context) {
 // @Summary  话题详情
 // @Tags     话题
 // @Produce  json
-// @Param    topicId  path  int  true  "话题ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.TopicIDURI  true  "话题路径参数"
+// @Success  200  {object}  dto.TopicResponse
 // @Failure  400  {object}  response.Body
 // @Router   /topics/{topicId} [get]
 func (h *TopicAPI) Get(c *gin.Context) {
-	res, err := h.svc.Get(paramID(c, "topicId"))
+	var req dto.TopicIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.Get(req.TopicID)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -57,19 +70,25 @@ func (h *TopicAPI) Get(c *gin.Context) {
 // @Summary  话题下的帖子列表
 // @Tags     话题
 // @Produce  json
-// @Param    topicId   path   int     true   "话题ID"
-// @Param    sort      query  string  false  "排序方式"
-// @Param    page      query  int     false  "页码"
-// @Param    pageSize  query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    topicId  path   dto.TopicIDURI      true   "话题路径参数"
+// @Param    req      query  dto.TopicPostsQuery  false  "帖子列表查询参数"
+// @Success  200  {object}  dto.PostPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /topics/{topicId}/posts [get]
 func (h *TopicAPI) Posts(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.Posts(paramID(c, "topicId"), middleware.CurrentUserID(c), c.Query("sort"), page, size)
+	var uri dto.TopicIDURI
+	if !bindURI(c, &uri) {
+		return
+	}
+	var req dto.TopicPostsQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
+	list, total, err := h.svc.Posts(uri.TopicID, middleware.CurrentUserID(c), req.Sort, req.Page, req.PageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }

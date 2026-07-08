@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
 	errs "github.com/feedora/backend/pkg/errors"
 	"github.com/feedora/backend/pkg/middleware"
@@ -22,13 +23,15 @@ func NewFileAPI(svc *service.FileService) *FileAPI {
 // @Tags     文件
 // @Accept   multipart/form-data
 // @Produce  json
-// @Param    file      formData  file    true   "上传的文件"
-// @Param    bizType   formData  string  false  "业务类型"
-// @Success  200  {object}  response.Body
+// @Param    file     formData  file                 true   "上传的文件"
+// @Param    bizType  formData  string               false  "业务类型"
+// @Success  200  {object}  dto.UploadResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /files/upload [post]
 func (h *FileAPI) Upload(c *gin.Context) {
+	var form dto.UploadFileForm
+	_ = c.ShouldBind(&form)
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		response.Fail(c, errs.ErrParams)
@@ -43,7 +46,7 @@ func (h *FileAPI) Upload(c *gin.Context) {
 
 	res, err := h.svc.Upload(service.UploadInput{
 		UserID:   middleware.CurrentUserID(c),
-		BizType:  c.DefaultPostForm("bizType", "post_image"),
+		BizType:  form.BizType,
 		Filename: fileHeader.Filename,
 		MimeType: fileHeader.Header.Get("Content-Type"),
 		Size:     fileHeader.Size,

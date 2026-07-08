@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
@@ -20,7 +21,7 @@ func NewGrowthAPI(svc *service.GrowthService) *GrowthAPI {
 // @Summary  每日签到
 // @Tags     成长
 // @Produce  json
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.CheckInResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /growth/check-in [post]
@@ -37,25 +38,33 @@ func (h *GrowthAPI) CheckIn(c *gin.Context) {
 // @Summary  成长任务列表
 // @Tags     成长
 // @Produce  json
-// @Param    type  query  string  false  "任务类型"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.GrowthTaskQuery  false  "成长任务查询参数"
+// @Success  200  {object}  dto.TaskListResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /growth/tasks [get]
 func (h *GrowthAPI) Tasks(c *gin.Context) {
-	response.OK(c, h.svc.Tasks(middleware.CurrentUserID(c), c.Query("type")))
+	var req dto.GrowthTaskQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	response.OK(c, h.svc.Tasks(middleware.CurrentUserID(c), req.Type))
 }
 
 // ClaimTask 领取任务奖励
 // @Summary  领取任务奖励
 // @Tags     成长
 // @Produce  json
-// @Param    taskId  path  int  true  "任务ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.TaskIDURI  true  "任务路径参数"
+// @Success  200  {object}  dto.ClaimedResponse
 // @Failure  400  {object}  response.Body
 // @Security BearerAuth
 // @Router   /growth/tasks/{taskId}/claim [post]
 func (h *GrowthAPI) ClaimTask(c *gin.Context) {
+	var req dto.TaskIDURI
+	if !bindURI(c, &req) {
+		return
+	}
 	response.OK(c, gin.H{"claimed": true})
 }
 
@@ -63,15 +72,16 @@ func (h *GrowthAPI) ClaimTask(c *gin.Context) {
 // @Summary  成长排行榜
 // @Tags     成长
 // @Produce  json
-// @Param    type      query  string  false  "排行类型"
-// @Param    range     query  string  false  "时间范围"
-// @Param    page      query  int     false  "页码"
-// @Param    pageSize  query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.GrowthRankingQuery  false  "成长排行榜查询参数"
+// @Success  200  {object}  dto.RankingListResponse
 // @Failure  400  {object}  response.Body
 // @Router   /growth/rankings [get]
 func (h *GrowthAPI) Rankings(c *gin.Context) {
-	page, size := pageParams(c)
-	list := h.svc.Rankings(c.Query("type"), c.Query("range"), page, size, middleware.CurrentUserID(c))
+	var req dto.GrowthRankingQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
+	list := h.svc.Rankings(req.Type, req.Range, req.Page, req.PageSize, middleware.CurrentUserID(c))
 	response.OK(c, list)
 }

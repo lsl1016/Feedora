@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
-	errs "github.com/feedora/backend/pkg/errors"
 	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -22,32 +21,38 @@ func NewUserAPI(svc *service.UserService) *UserAPI {
 // @Summary  获取用户列表
 // @Tags     用户
 // @Produce  json
-// @Param    keyword   query  string  false  "搜索关键词"
-// @Param    page      query  int     false  "页码"
-// @Param    pageSize  query  int     false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.UserListQuery  false  "用户列表查询参数"
+// @Success  200  {object}  dto.UserListResponse
 // @Failure  400  {object}  response.Body
 // @Router   /users [get]
 func (h *UserAPI) List(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.List(c.Query("keyword"), page, size)
+	var req dto.UserListQuery
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req.PageRequest)
+	list, total, err := h.svc.List(req.Keyword, req.Page, req.PageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }
 
 // Get 获取用户详情
 // @Summary  获取用户详情
 // @Tags     用户
 // @Produce  json
-// @Param    userId  path  int  true  "用户ID"
-// @Success  200  {object}  response.Body
+// @Param    req  path  dto.UserIDURI  true  "用户路径参数"
+// @Success  200  {object}  dto.UserResponse
 // @Failure  400  {object}  response.Body
 // @Router   /users/{userId} [get]
 func (h *UserAPI) Get(c *gin.Context) {
-	res, err := h.svc.Get(paramID(c, "userId"))
+	var req dto.UserIDURI
+	if !bindURI(c, &req) {
+		return
+	}
+	res, err := h.svc.Get(req.UserID)
 	if err != nil {
 		response.Fail(c, err)
 		return
@@ -62,13 +67,12 @@ func (h *UserAPI) Get(c *gin.Context) {
 // @Produce  json
 // @Security BearerAuth
 // @Param    body  body  dto.UpdateProfileRequest  true  "资料请求体"
-// @Success  200  {object}  response.Body
+// @Success  200  {object}  dto.UserResponse
 // @Failure  400  {object}  response.Body
 // @Router   /users/me/profile [put]
 func (h *UserAPI) UpdateProfile(c *gin.Context) {
 	var in dto.UpdateProfileRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		response.Fail(c, errs.ErrParams)
+	if !bindJSON(c, &in) {
 		return
 	}
 	res, err := h.svc.UpdateProfile(middleware.CurrentUserID(c), in)
@@ -84,15 +88,18 @@ func (h *UserAPI) UpdateProfile(c *gin.Context) {
 // @Tags     用户
 // @Produce  json
 // @Security BearerAuth
-// @Param    page      query  int  false  "页码"
-// @Param    pageSize  query  int  false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.PageRequest  false  "分页查询参数"
+// @Success  200  {object}  dto.PostPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /users/me/posts [get]
 func (h *UserAPI) MyPosts(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.MyPosts(middleware.CurrentUserID(c), page, size)
-	h.pageOrFail(c, list, total, page, size, err)
+	var req dto.PageRequest
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req)
+	list, total, err := h.svc.MyPosts(middleware.CurrentUserID(c), req.Page, req.PageSize)
+	h.pageOrFail(c, list, total, req.Page, req.PageSize, err)
 }
 
 // MyComments 获取我的评论列表
@@ -100,19 +107,22 @@ func (h *UserAPI) MyPosts(c *gin.Context) {
 // @Tags     用户
 // @Produce  json
 // @Security BearerAuth
-// @Param    page      query  int  false  "页码"
-// @Param    pageSize  query  int  false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.PageRequest  false  "分页查询参数"
+// @Success  200  {object}  dto.MyCommentPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /users/me/comments [get]
 func (h *UserAPI) MyComments(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.MyComments(middleware.CurrentUserID(c), page, size)
+	var req dto.PageRequest
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req)
+	list, total, err := h.svc.MyComments(middleware.CurrentUserID(c), req.Page, req.PageSize)
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
-	response.Page(c, list, total, page, size)
+	response.Page(c, list, total, req.Page, req.PageSize)
 }
 
 // MyLikedPosts 获取我点赞的帖子列表
@@ -120,15 +130,18 @@ func (h *UserAPI) MyComments(c *gin.Context) {
 // @Tags     用户
 // @Produce  json
 // @Security BearerAuth
-// @Param    page      query  int  false  "页码"
-// @Param    pageSize  query  int  false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.PageRequest  false  "分页查询参数"
+// @Success  200  {object}  dto.PostPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /users/me/liked-posts [get]
 func (h *UserAPI) MyLikedPosts(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.MyLikedPosts(middleware.CurrentUserID(c), page, size)
-	h.pageOrFail(c, list, total, page, size, err)
+	var req dto.PageRequest
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req)
+	list, total, err := h.svc.MyLikedPosts(middleware.CurrentUserID(c), req.Page, req.PageSize)
+	h.pageOrFail(c, list, total, req.Page, req.PageSize, err)
 }
 
 // MyFavoritePosts 获取我收藏的帖子列表
@@ -136,15 +149,18 @@ func (h *UserAPI) MyLikedPosts(c *gin.Context) {
 // @Tags     用户
 // @Produce  json
 // @Security BearerAuth
-// @Param    page      query  int  false  "页码"
-// @Param    pageSize  query  int  false  "每页数量"
-// @Success  200  {object}  response.Body
+// @Param    req  query  dto.PageRequest  false  "分页查询参数"
+// @Success  200  {object}  dto.PostPageResponse
 // @Failure  400  {object}  response.Body
 // @Router   /users/me/favorite-posts [get]
 func (h *UserAPI) MyFavoritePosts(c *gin.Context) {
-	page, size := pageParams(c)
-	list, total, err := h.svc.MyFavoritePosts(middleware.CurrentUserID(c), page, size)
-	h.pageOrFail(c, list, total, page, size, err)
+	var req dto.PageRequest
+	if !bindQuery(c, &req) {
+		return
+	}
+	normalizePageRequest(&req)
+	list, total, err := h.svc.MyFavoritePosts(middleware.CurrentUserID(c), req.Page, req.PageSize)
+	h.pageOrFail(c, list, total, req.Page, req.PageSize, err)
 }
 
 func (h *UserAPI) pageOrFail(c *gin.Context, list []dto.Post, total int64, page, size int, err error) {
