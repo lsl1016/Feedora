@@ -83,7 +83,23 @@ go run ./cmd/api
 
 服务默认监听 `:8090`，接口前缀 `/api/v1`，启动时自动执行 AutoMigrate 建表。
 
-### 4. 前端联调
+### 4. 生成 Swagger 接口文档
+
+如未安装 `swag`，先执行：
+
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+在 `Feedora-backend` 目录下执行：
+
+```bash
+swag init -g cmd/api/main.go -o docs
+```
+
+生成后的文档输出到 `docs/` 目录，启动服务后可通过 `http://localhost:8090/swagger/index.html` 访问。
+
+### 5. 前端联调
 
 `Feedora-frontend/.env.development`：
 
