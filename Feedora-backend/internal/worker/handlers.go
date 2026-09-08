@@ -89,6 +89,15 @@ func (r *Runner) handleNotification(ctx context.Context, m *event.Message) {
 			return
 		}
 		r.notify(ctx, c.OwnerID, m.UserID, "circle", "圈子有新成员", "有新成员加入了你的圈子「"+c.Name+"」", "circle", c.ID)
+	case event.UserFollowed:
+		u, _ := r.users.FindByID(m.UserID)
+		if u == nil || m.AggregateID == m.UserID {
+			return
+		}
+		if !r.idem.Claim(m.EventID, w) {
+			return
+		}
+		r.notify(ctx, m.AggregateID, m.UserID, "follow", "收到新的关注", u.Nickname+" 关注了你", "user", m.UserID)
 	}
 }
 
@@ -101,6 +110,8 @@ func (r *Runner) notify(ctx context.Context, userID, actorID int64, category, ti
 		targetURL = "/posts/" + sid(targetID)
 	case "circle":
 		targetURL = "/circles/" + sid(targetID)
+	case "user":
+		targetURL = "/users/" + sid(targetID)
 	}
 	if err := r.notifs.Insert(&model.Notification{
 		UserID: userID, ActorID: actorID, Type: category, Title: title, Content: content,

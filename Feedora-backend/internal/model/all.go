@@ -5,7 +5,7 @@ func AllModels() []interface{} {
 	return []interface{}{
 		// 阶段一核心表。
 		&User{}, &Post{}, &PostImage{}, &Tag{}, &PostTag{}, &Topic{}, &PostTopic{},
-		&Comment{}, &PostLike{}, &PostFavorite{}, &CommentLike{},
+		&Comment{}, &PostLike{}, &PostFavorite{}, &CommentLike{}, &UserFollow{},
 		&Circle{}, &CircleMember{}, &File{}, &OperationLog{},
 		// 阶段二预留表（提前建表，为后续能力打基础）。
 		&Notification{}, &UserPointLog{}, &EventOutbox{}, &WorkerEventRecord{},

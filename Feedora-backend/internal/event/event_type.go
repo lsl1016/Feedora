@@ -13,4 +13,6 @@ const (
 	PostFavorited  = "PostFavorited"
 	CircleCreated  = "CircleCreated"
 	CircleJoined   = "CircleJoined"
+	UserFollowed   = "UserFollowed"
+	UserUnfollowed = "UserUnfollowed"
 )

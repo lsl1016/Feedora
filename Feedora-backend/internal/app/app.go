@@ -86,6 +86,7 @@ func New(configPath string) (*App, error) {
 	outboxRepo := repository.NewOutboxRepository(db)
 	notifRepo := repository.NewNotificationRepository(db)
 	growthRepo := repository.NewGrowthRepository(db)
+	followRepo := repository.NewFollowRepository(db)
 
 	// 事件生产者：启用 Kafka 时走 Outbox 可靠投递，否则打印日志。
 	var producer event.Producer
@@ -112,6 +113,7 @@ func New(configPath string) (*App, error) {
 	rankSvc := service.NewRankService(db, postRepo, userRepo, topicRepo, circleRepo, cch)
 	notifSvc := service.NewNotificationService(notifRepo)
 	growthSvc := service.NewGrowthService(growthRepo, userRepo, rankSvc)
+	followSvc := service.NewFollowService(followRepo, userRepo, postSvc, producer, cch)
 
 	// 接口层。
 	handlers := router.Handlers{
@@ -129,6 +131,7 @@ func New(configPath string) (*App, error) {
 		Rank:         api.NewRankAPI(rankSvc),
 		Notification: api.NewNotificationAPI(notifSvc),
 		Growth:       api.NewGrowthAPI(growthSvc),
+		Follow:       api.NewFollowAPI(followSvc),
 	}
 
 	engine := router.New(router.Options{

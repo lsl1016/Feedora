@@ -28,6 +28,7 @@ type Handlers struct {
 	Rank         *api.RankAPI
 	Notification *api.NotificationAPI
 	Growth       *api.GrowthAPI
+	Follow       *api.FollowAPI
 }
 
 // Options 路由装配所需的配置与依赖。
@@ -86,6 +87,7 @@ func New(opts Options) *gin.Engine {
 	registerRank(x)
 	registerNotification(x)
 	registerGrowth(x)
+	registerFollow(x)
 
 	return r
 }

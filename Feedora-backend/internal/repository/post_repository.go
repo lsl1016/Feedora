@@ -27,6 +27,9 @@ type PostFilter struct {
 	CircleID      int64
 	TopicID       int64
 	AuthorID      int64
+	AuthorIDs     []int64 // 作者集合（关注动态等场景）。
+	CircleIDs     []int64 // 圈子集合（圈子动态等场景）。
+	TopicIDs      []int64 // 话题集合（话题动态等场景）。
 	IncludeHidden bool
 	ViewerID      int64
 	Offset        int
@@ -54,9 +57,20 @@ func (r *PostRepository) List(f PostFilter) ([]model.Post, int64, error) {
 	if f.AuthorID > 0 {
 		q = q.Where("author_id = ?", f.AuthorID)
 	}
-	if f.CircleID > 0 {
+	// 关注信息流：只看关注作者的内容，未登录时退化为普通信息流。
+	if f.FeedType == "following" && f.ViewerID > 0 {
+		q = q.Where("author_id IN (?)", r.db.Model(&model.UserFollow{}).Select("followee_id").Where("follower_id = ?", f.ViewerID))
+	}
+	if len(f.AuthorIDs) > 0 {
+		q = q.Where("author_id IN ?", f.AuthorIDs)
+	}
+	// 指定圈子（单个 / 集合）时不叠加公开可见性限制，圈内帖对圈子成员可见。
+	switch {
+	case f.CircleID > 0:
 		q = q.Where("circle_id = ?", f.CircleID)
-	} else {
+	case len(f.CircleIDs) > 0:
+		q = q.Where("circle_id IN ?", f.CircleIDs)
+	default:
 		q = q.Where("visibility = ? OR circle_id IS NULL", model.VisibilityPublic)
 	}
 	if f.Keyword != "" {
@@ -68,6 +82,9 @@ func (r *PostRepository) List(f PostFilter) ([]model.Post, int64, error) {
 	}
 	if f.TopicID > 0 {
 		q = q.Where("id IN (?)", r.db.Model(&model.PostTopic{}).Select("post_id").Where("topic_id = ?", f.TopicID))
+	}
+	if len(f.TopicIDs) > 0 {
+		q = q.Where("id IN (?)", r.db.Model(&model.PostTopic{}).Select("post_id").Where("topic_id IN ?", f.TopicIDs))
 	}
 
 	var total int64

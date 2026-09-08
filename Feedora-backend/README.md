@@ -47,7 +47,8 @@ Feedora-backend
 ├── pkg
 │   ├── config database jwtx ossx errors logger middleware response utils
 │   └── redisx esx kafkax validator singleflightx   # 阶段二占位
-├── migrations deployments scripts   # 部署与迁移（阶段二）
+├── migrations                       # 版本化表结构变更 SQL（scripts/apply-migrations.sh 执行）
+├── deployments scripts               # 部署与常用脚本（建新表由 GORM AutoMigrate 完成）
 └── uploads                          # 本地上传目录（运行时生成）
 ```
 

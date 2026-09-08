@@ -58,6 +58,16 @@ function realEndpoint(methodName: string, args: any[]): { method: 'get' | 'post'
     getMyPosts: () => ({ method: 'get', url: '/users/me/posts', params: a }),
     getMyLikedPosts: () => ({ method: 'get', url: '/users/me/liked-posts', params: a }),
     getMyFavoritePosts: () => ({ method: 'get', url: '/users/me/favorite-posts', params: a }),
+    // 关注体系
+    followUser: () => ({ method: 'post', url: `/users/${a}/follow` }),
+    unfollowUser: () => ({ method: 'delete', url: `/users/${a}/follow` }),
+    getUserFollowState: () => ({ method: 'get', url: `/users/${a}/follow/state` }),
+    getFollowingUsers: () => ({ method: 'get', url: `/users/${a?.userId ?? 'me'}/following`, params: { page: a?.page, pageSize: a?.pageSize } }),
+    getFollowers: () => ({ method: 'get', url: `/users/${a}/followers`, params: b }),
+    getFollowingFeed: () => ({ method: 'get', url: '/users/me/following-feed', params: { page: a?.page, pageSize: a?.pageSize, feedTab: a?.feedTab ?? 'all' } }),
+    getFollowingCircles: () => ({ method: 'get', url: '/users/me/following-circles', params: { page: a?.page, pageSize: a?.pageSize } }),
+    getFollowingTopics: () => ({ method: 'get', url: '/users/me/following-topics', params: { page: a?.page, pageSize: a?.pageSize } }),
+    getFollowingTags: () => ({ method: 'get', url: '/users/me/following-tags', params: { page: a?.page, pageSize: a?.pageSize } }),
     // 后台管理
     adminGetUsers: () => ({ method: 'get', url: '/admin/users', params: a }),
     adminGetPosts: () => ({ method: 'get', url: '/admin/posts', params: a }),

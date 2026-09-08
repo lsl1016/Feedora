@@ -57,6 +57,9 @@ type ListFilter struct {
 	CircleID      int64
 	TopicID       int64
 	AuthorID      int64
+	AuthorIDs     []int64 // 作者集合（关注体系使用）。
+	CircleIDs     []int64 // 圈子集合（关注体系使用）。
+	TopicIDs      []int64 // 话题集合（关注体系使用）。
 	IncludeHidden bool
 	ViewerID      int64
 	Page          int
@@ -75,6 +78,9 @@ func (s *PostService) List(f ListFilter) ([]dto.Post, int64, error) {
 		CircleID:      f.CircleID,
 		TopicID:       f.TopicID,
 		AuthorID:      f.AuthorID,
+		AuthorIDs:     f.AuthorIDs,
+		CircleIDs:     f.CircleIDs,
+		TopicIDs:      f.TopicIDs,
 		IncludeHidden: f.IncludeHidden,
 		ViewerID:      f.ViewerID,
 		Offset:        (page - 1) * size,
