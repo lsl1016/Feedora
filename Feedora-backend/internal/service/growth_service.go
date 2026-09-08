@@ -67,6 +67,36 @@ func (s *GrowthService) Rankings(rankType, timeRange string, page, size int, cur
 	return s.rank.Rankings(rankType, timeRange, page, size, currentUserID)
 }
 
+// ClaimTask 领取任务奖励：进度达标后发放积分。
+// 唯一索引 uk_user_action_biz(action=task_claim, biz_type=task) 保证同一任务只发一次；
+// 签到任务（ID=3）不走领取，由签到接口直接发放。
+func (s *GrowthService) ClaimTask(userID, taskID int64) error {
+	u, err := s.users.FindByID(userID)
+	if err != nil || u == nil {
+		return errs.ErrInternal
+	}
+	var progress, target int64
+	var points int
+	var title string
+	switch taskID {
+	case 1:
+		progress, target, points, title = u.PostCount, 1, 10, "发布首篇帖子"
+	case 2:
+		progress, target, points, title = u.CommentCount, 3, 3, "参与评论"
+	case 3:
+		return errs.ErrTaskClaimViaCheckIn
+	default:
+		return errs.ErrParams
+	}
+	if progress < target {
+		return errs.ErrTaskNotDone
+	}
+	if !s.growth.AddPointLog(userID, "task_claim", points, "task", taskID, "任务奖励："+title) {
+		return errs.ErrTaskClaimed
+	}
+	return nil
+}
+
 func min64(v, max int64) int {
 	if v > max {
 		return int(max)

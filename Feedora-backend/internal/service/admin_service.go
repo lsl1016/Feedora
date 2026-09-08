@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/feedora/backend/internal/dto"
+	"github.com/feedora/backend/internal/event"
 	"github.com/feedora/backend/internal/model"
 	"github.com/feedora/backend/internal/repository"
 	errs "github.com/feedora/backend/pkg/errors"
@@ -17,6 +18,7 @@ type AdminService struct {
 	topics   *repository.TopicRepository
 	circles  *repository.CircleRepository
 	comments *repository.CommentRepository
+	producer event.Producer
 }
 
 func NewAdminService(
@@ -26,8 +28,9 @@ func NewAdminService(
 	topics *repository.TopicRepository,
 	circles *repository.CircleRepository,
 	comments *repository.CommentRepository,
+	producer event.Producer,
 ) *AdminService {
-	return &AdminService{admin: admin, users: users, tags: tags, topics: topics, circles: circles, comments: comments}
+	return &AdminService{admin: admin, users: users, tags: tags, topics: topics, circles: circles, comments: comments, producer: producer}
 }
 
 // Users 用户列表。
@@ -133,6 +136,7 @@ func (s *AdminService) CreateTopic(in dto.CreateTopicRequest) (*dto.Topic, error
 	if err := s.topics.Create(t); err != nil {
 		return nil, errs.New(409, "话题已存在")
 	}
+	s.producer.Publish(event.TopicTopic, event.TopicCreated, t.ID, 0, nil)
 	res := dto.ToTopic(t)
 	return &res, nil
 }
@@ -161,12 +165,69 @@ func (s *AdminService) UpdateTopic(id int64, in dto.UpdateTopicRequest) (*dto.To
 	if err := s.topics.Update(id, updates); err != nil {
 		return nil, errs.ErrInternal
 	}
+	s.producer.Publish(event.TopicTopic, event.TopicUpdated, id, 0, nil)
 	t, _ := s.topics.FindByID(id)
 	if t == nil {
 		return nil, errs.ErrNotFound
 	}
 	res := dto.ToTopic(t)
 	return &res, nil
+}
+
+// SetUserStatus 封禁 / 解禁用户，并记录操作日志。
+func (s *AdminService) SetUserStatus(adminID, userID int64, status string) error {
+	switch status {
+	case model.UserNormal, model.UserBanned:
+	default:
+		return errs.ErrParams
+	}
+	u, err := s.users.FindByID(userID)
+	if err != nil || u == nil {
+		return errs.ErrNotFound
+	}
+	if err := s.admin.UpdateUserStatus(userID, status); err != nil {
+		return errs.ErrInternal
+	}
+	s.log(adminID, "update_user_status", "user", userID, "用户 "+u.Nickname+" 状态变更为 "+status)
+	return nil
+}
+
+// SetPostStatus 帖子上下架（published / hidden / takedown），变更后发事件供 ES 索引同步。
+func (s *AdminService) SetPostStatus(adminID, postID int64, status string) error {
+	switch status {
+	case model.PostPublished, model.PostHidden, model.PostTakedown:
+	default:
+		return errs.ErrParams
+	}
+	p := s.admin.GetPostByID(postID)
+	if p == nil {
+		return errs.ErrPostNotFound
+	}
+	if err := s.admin.UpdatePostStatus(postID, status); err != nil {
+		return errs.ErrInternal
+	}
+	s.log(adminID, "update_post_status", "post", postID, "帖子《"+p.Title+"》状态变更为 "+status)
+	switch status {
+	case model.PostPublished:
+		s.producer.Publish(event.TopicPost, event.PostUnhidden, postID, adminID, nil)
+	case model.PostHidden:
+		s.producer.Publish(event.TopicPost, event.PostHidden, postID, adminID, nil)
+	default:
+		s.producer.Publish(event.TopicPost, event.PostUpdated, postID, adminID, nil)
+	}
+	return nil
+}
+
+// log 记录后台操作日志。
+func (s *AdminService) log(adminID int64, action, targetType string, targetID int64, detail string) {
+	name := ""
+	if u, _ := s.users.FindByID(adminID); u != nil {
+		name = u.Nickname
+	}
+	s.admin.AddLog(&model.OperationLog{
+		AdminID: adminID, AdminName: name, Action: action,
+		TargetType: targetType, TargetID: targetID, Detail: detail,
+	})
 }
 
 // Circles 圈子列表。

@@ -7,4 +7,5 @@ const (
 	TopicComment     = "comment.events"
 	TopicInteraction = "interaction.events"
 	TopicCircle      = "circle.events"
+	TopicTopic       = "topic.events"
 )

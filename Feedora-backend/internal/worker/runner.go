@@ -3,10 +3,13 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/feedora/backend/internal/cache"
 	"github.com/feedora/backend/internal/event"
+	"github.com/feedora/backend/internal/model"
 	"github.com/feedora/backend/internal/repository"
 	"github.com/feedora/backend/internal/search"
 	"github.com/feedora/backend/pkg/config"
@@ -62,7 +65,7 @@ func New(cfg *config.Config, db *gorm.DB, cch *cache.Cache, sc *search.Client) *
 
 // topicsWithPrefix 生成需消费的全部业务 Topic（含前缀）。
 func topicsWithPrefix(prefix string) []string {
-	names := []string{event.TopicUser, event.TopicPost, event.TopicComment, event.TopicInteraction, event.TopicCircle}
+	names := []string{event.TopicUser, event.TopicPost, event.TopicComment, event.TopicInteraction, event.TopicCircle, event.TopicTopic}
 	out := make([]string, 0, len(names))
 	for _, n := range names {
 		out = append(out, prefix+"."+n)
@@ -86,6 +89,7 @@ func (r *Runner) Run(ctx context.Context) {
 	}
 
 	go r.dispatchLoop(ctx)
+	go r.hotScoreLoop(ctx)
 
 	logger.Infof("worker 开始消费 topics=%v group=%s", topicsWithPrefix(r.cfg.Kafka.TopicPrefix), r.cfg.Kafka.ConsumerGroup)
 	for {
@@ -172,6 +176,42 @@ func (r *Runner) dispatchOnce(ctx context.Context, batch int) {
 		observability.KafkaProduce(row.Topic, "success")
 		logger.Infof("事件已投递 topic=%s eventType=%s eventId=%s traceId=%s", row.Topic, row.EventType, row.EventID, row.TraceID)
 	}
+}
+
+// hotScoreLoop 定时把热榜 Redis ZSet 的累计分写回 posts.hot_score（counter 职责），
+// 使未启用 Redis 的部署也能按 hot_score 排序。
+func (r *Runner) hotScoreLoop(ctx context.Context) {
+	if !r.cch.Enabled() {
+		return
+	}
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			r.flushHotScore(ctx)
+		}
+	}
+}
+
+// flushHotScore 取周榜（all 时间段）Top N 写回 MySQL。
+func (r *Runner) flushHotScore(ctx context.Context) {
+	rows := r.cch.ZTop(ctx, cache.RankKey("post", "all"), 0, 200)
+	if len(rows) == 0 {
+		return
+	}
+	n := 0
+	for _, z := range rows {
+		id, err := strconv.ParseInt(fmt.Sprint(z.Member), 10, 64)
+		if err != nil {
+			continue
+		}
+		r.db.Model(&model.Post{}).Where("id = ?", id).UpdateColumn("hot_score", int64(z.Score))
+		n++
+	}
+	logger.Infof("热榜分数已回写 MySQL, count=%d", n)
 }
 
 // Close 释放资源。

@@ -17,6 +17,7 @@ func (r *Runner) handle(ctx context.Context, m *event.Message) {
 	r.handleNotification(ctx, m)
 	r.handleGrowth(ctx, m)
 	r.handleRank(ctx, m)
+	r.handleStat(ctx, m)
 	logger.Infof("consume event success, eventType:%s, eventId:%s, traceId:%s, aggregateId:%d, durationMs:%d",
 		m.EventType, m.EventID, m.TraceID, m.AggregateID, time.Since(start).Milliseconds())
 }
@@ -28,7 +29,7 @@ func (r *Runner) handleSearch(ctx context.Context, m *event.Message) {
 	}
 	const w = "search"
 	switch m.EventType {
-	case event.PostCreated, event.PostUpdated, event.PostHidden, event.PostDeleted, "PostUnhidden":
+	case event.PostCreated, event.PostUpdated, event.PostHidden, event.PostDeleted, event.PostUnhidden:
 		if !r.idem.Claim(m.EventID, w) {
 			return
 		}
@@ -46,6 +47,13 @@ func (r *Runner) handleSearch(ctx context.Context, m *event.Message) {
 		}
 		if c, _ := r.circles.FindByID(m.AggregateID); c != nil {
 			r.indexCircle(ctx, c)
+		}
+	case event.TopicCreated, event.TopicUpdated:
+		if !r.idem.Claim(m.EventID, w) {
+			return
+		}
+		if t, _ := r.topics.FindByID(m.AggregateID); t != nil {
+			r.indexTopic(ctx, t)
 		}
 	}
 }
@@ -121,7 +129,8 @@ func (r *Runner) notify(ctx context.Context, userID, actorID int64, category, ti
 		logger.Errorf("生成通知失败: %v", err)
 		return
 	}
-	r.cch.Incr(ctx, cache.NotifyUnreadKey(userID))
+	// 未读数走 cache-aside：落库后失效缓存，下次查询回源 DB COUNT。
+	r.cch.Del(ctx, cache.NotifyUnreadKey(userID))
 }
 
 // handleGrowth 异步发放积分。
@@ -178,8 +187,12 @@ func (r *Runner) handleRank(ctx context.Context, m *event.Message) {
 		postID, delta = m.AggregateID, 1
 	case event.PostLiked:
 		postID, delta = m.AggregateID, 3
+	case event.PostUnliked:
+		postID, delta = m.AggregateID, -3
 	case event.PostFavorited:
 		postID, delta = m.AggregateID, 4
+	case event.PostUnfavorited:
+		postID, delta = m.AggregateID, -4
 	case event.CommentCreated:
 		if cm, _ := r.comments.FindByID(m.AggregateID); cm != nil {
 			postID, delta = cm.PostID, 5
@@ -205,5 +218,17 @@ func (r *Runner) handleRank(ctx context.Context, m *event.Message) {
 	member := sid(postID)
 	for _, tr := range []string{"today", "week", "all"} {
 		r.cch.ZIncr(ctx, cache.RankKey("post", tr), member, delta)
+	}
+}
+
+// handleStat 维护派生统计字段（话题参与人数等）。
+func (r *Runner) handleStat(ctx context.Context, m *event.Message) {
+	const w = "stat"
+	switch m.EventType {
+	case event.PostCreated, event.PostDeleted:
+		if !r.idem.Claim(m.EventID, w) {
+			return
+		}
+		r.topics.RecomputeParticipantCountsByPost(m.AggregateID)
 	}
 }

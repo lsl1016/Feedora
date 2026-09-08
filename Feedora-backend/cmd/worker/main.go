@@ -28,6 +28,10 @@ func main() {
 		logger.Errorf("加载配置失败: %v", err)
 		return
 	}
+	if !cfg.Worker.Enabled {
+		logger.Warnf("worker.enabled=false，worker 退出")
+		return
+	}
 	if !cfg.Kafka.Enabled {
 		logger.Warnf("kafka 未启用，worker 退出")
 		return

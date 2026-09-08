@@ -1,7 +1,7 @@
 ---
 title: 通知模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: notification
 maintainer: Feedora 项目组
@@ -14,7 +14,8 @@ related_code:
   - internal/repository/notification_repository.go
   - internal/model/notification.go
   - internal/worker/handlers.go
-summary: 站内通知的列表、已读标记与未读数读路径，写入由 Worker 消费 Kafka 业务事件（点赞、收藏、评论、加圈、关注）异步落库 notifications 表并累加 Redis 未读计数。
+  - internal/cache/cache.go
+summary: 站内通知的列表、已读标记与未读数读路径，写入由 Worker 消费 Kafka 业务事件（点赞、收藏、评论、加圈、关注）异步落库 notifications 表，未读数以 Redis 缓存旁路（cache-aside，10 分钟 TTL）维护。
 ---
 
 ## 1. 模块概述
@@ -62,7 +63,7 @@ summary: 站内通知的列表、已读标记与未读数读路径，写入由 W
 | `CircleJoined` | `circle` | 圈子有新成员 | 有新成员加入了你的圈子「圈子名」 | `circle` / `/circles/{circleID}` |
 | `UserFollowed` | `follow` | 收到新的关注 | {关注人昵称} 关注了你 | `user` / `/users/{关注人ID}` |
 
-消费者不使用消息 `Payload`，统一按 `AggregateID` / `UserID` 回查数据库（帖子、评论、圈子、用户）取标题与作者后组装通知。写入成功后执行 `cch.Incr` 累加 Redis Key `notify:unread:{接收人ID}`（Redis 未启用时空操作）。
+消费者不使用消息 `Payload`，统一按 `AggregateID` / `UserID` 回查数据库（帖子、评论、圈子、用户）取标题与作者后组装通知。写入成功后删除（`Del`）未读数缓存 Key `notify:unread:{接收人ID}`，下次未读数查询回源数据库重建缓存（Redis 未启用时空操作）。
 
 ### 幂等与失败处理
 
@@ -74,8 +75,8 @@ summary: 站内通知的列表、已读标记与未读数读路径，写入由 W
 
 `read_status` 仅在 `unread` 与 `read` 两个值之间单向流转，不存在已读回退为未读的操作。
 
-- `MarkRead`：按 `id + user_id + read_status = 'unread'` 条件更新为 `read`，重复标记或操作他人通知均不生效；仓储返回的 `RowsAffected > 0` 布尔值被 Service 层丢弃，接口恒返回成功。
-- `MarkAllRead`：将当前用户全部 `unread` 记录一次性置为 `read`，重复调用为空操作。
+- `MarkRead`：按 `id + user_id + read_status = 'unread'` 条件更新为 `read`，重复标记或操作他人通知均不生效；仓储返回的 `RowsAffected > 0` 布尔值被 Service 层丢弃，接口恒返回成功。更新执行后无论影响行数如何，均删除未读数缓存 Key（`invalidateUnread`）。
+- `MarkAllRead`：将当前用户全部 `unread` 记录一次性置为 `read`，重复调用为空操作；执行后同样删除未读数缓存 Key。
 
 ### 列表查询与分类过滤
 
@@ -85,12 +86,12 @@ DTO 转换（`dto.ToNotificationItem`）将模型的 `Type` 字段直接输出�
 
 ### 未读数维护
 
-未读数存在两套互不同步的机制：
+未读数采用 Redis cache-aside 模式，Key 为 `notify:unread:{userID}`（`cache.NotifyUnreadKey`），TTL 10 分钟（常量 `unreadCacheTTL`，位于 `internal/service/notification_service.go`）：
 
-- Redis Key `notify:unread:{userID}`（`cache.NotifyUnreadKey`）：仅在 Worker 生成通知后 `Incr +1`，无任何读取方；`MarkRead`、`MarkAllRead` 均不扣减该 Key。
-- 接口 `GET /notifications/unread-count`：实时执行数据库 `COUNT(user_id = ? AND read_status = 'unread')`，不读 Redis。
-
-因此 Redis 未读计数为只写不读数据，接口返回的未读数始终以数据库实时统计为准。
+- 读取（`GET /notifications/unread-count`）：`Cache.GetIntOK` 命中（Key 存在且可解析为整数）时直接返回缓存值；未命中时执行数据库 `COUNT(user_id = ? AND read_status = 'unread')` 并 `SetInt` 写回缓存后返回。
+- 失效：Worker `notify` 落库成功后、`MarkRead` / `MarkAllRead` 执行后，均 `Del` 该 Key，下次读取回源重建。
+- `redis.enabled=false` 时 `GetIntOK` 恒未命中、`SetInt` / `Del` 为空操作，接口每次请求执行数据库 COUNT，与无缓存行为一致。
+- 升级前由旧 `Incr` 逻辑写入的存量 Key 无 TTL：命中后原样返回历史累加值，直到该用户下一次触发 `Del`（收到通知或标记已读）才回源重建。
 
 ## 4. 数据模型
 
@@ -124,14 +125,14 @@ DTO 转换（`dto.ToNotificationItem`）将模型的 `Type` 字段直接输出�
 | `kafka.topicPrefix` | `feedora` | 实际 topic 前缀，如 `feedora.interaction.events`；`OutboxProducer` 缺省值 `feedora` |
 | `kafka.consumerGroup` | `feedora-worker` | Worker 消费组 ID |
 | `worker.batchSize` / `worker.outboxIntervalSeconds` / `worker.maxRetry` | `100` / `2` / `5` | Outbox 批量投递与重试 |
-| `redis.enabled` | `true` | 控制未读计数 `Incr`；`false` 时跳过，不影响通知落库 |
+| `redis.enabled` | `true` | 控制未读数缓存（cache-aside）；`false` 时未读数每次请求数据库 COUNT，不影响通知落库 |
 
 当前实现的边界与否定事实：
 
 - `PostUnliked`、`UserUnfollowed`、`PostCreated`、`CircleCreated`、`UserRegistered` 等事件虽被发布，notification 消费者均不处理，不产生通知。
 - 回复评论不通知被回复人：`CommentCreated` 仅通知帖子作者，评论的 `ReplyToUserID` 不参与通知生成。
 - 通知无删除接口、无清理任务，数据只增不减；已读不可回退。
-- Redis Key `notify:unread:{userID}` 只增不减不读，与数据库未读数无同步路径。
+- 未读数缓存最多滞后 10 分钟（TTL 兜底），缓存删除失败时以 TTL 过期为准；`Cache.Incr` / `Decr` 在通知链路不再被调用。
 - 通知 `Insert` 失败时幂等记录不释放，该事件对应通知永久丢失，仅留错误日志。
 - `internal/worker/notification` 包为占位，无实现代码；实际消费逻辑位于 `internal/worker/handlers.go`。
 - 列表接口丢弃 `total` 与查询错误，前端无法获得总条数。
@@ -140,4 +141,5 @@ DTO 转换（`dto.ToNotificationItem`）将模型的 `Type` 字段直接输出�
 
 | 版本 | 日期 | 作者 | 说明 |
 | --- | --- | --- | --- |
+| v1.1 | 2026-09-09 | Feedora 项目组 | 未读数改为 Redis 缓存旁路（10 分钟 TTL），落库与已读后失效缓存 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

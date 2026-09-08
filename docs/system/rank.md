@@ -1,7 +1,7 @@
 ---
 title: 热榜模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: rank
 maintainer: Feedora 项目组
@@ -13,8 +13,9 @@ related_code:
   - internal/service/rank_service.go
   - internal/worker/rank/doc.go
   - internal/worker/handlers.go
+  - internal/worker/runner.go
   - internal/cache/keys.go
-summary: 热门榜单（帖子/圈子/话题）与用户/圈子排行榜的事件驱动 ZSet 计分、Redis 读取与 DB 回退实现。
+summary: 热门榜单（帖子/圈子/话题）与用户/圈子排行榜的事件驱动 ZSet 计分（含取消互动负增量）、Redis 读取与 DB 回退实现，post 榜累计分每 5 分钟回写 posts.hot_score。
 ---
 
 ## 1. 模块概述
@@ -45,19 +46,25 @@ rank 模块提供热门榜单与排行榜两类只读查询能力。热门榜单
 | --- | --- | --- | --- |
 | `PostCreated` | post 榜 | 帖子 ID | +1 |
 | `PostLiked` | post 榜 | 帖子 ID | +3 |
+| `PostUnliked` | post 榜 | 帖子 ID | -3 |
 | `PostFavorited` | post 榜 | 帖子 ID | +4 |
+| `PostUnfavorited` | post 榜 | 帖子 ID | -4 |
 | `CommentCreated` | post 榜 | 评论所属帖子 ID（`comments.FindByID` 反查） | +5 |
 | `CircleJoined` | circle 榜 | 圈子 ID | +2 |
+
+取消互动（`PostUnliked` / `PostUnfavorited`）只对榜单 ZSet 执行负增量，不追回 growth 模块已发放的积分。
 
 帖子与圈子事件均同时写入 `today` / `week` / `all` 三个 timeRange 的 ZSet，写入值完全相同，不存在时间窗衰减或衰减公式。每个事件在处理前通过 `idem.Claim(m.EventID, "rank")` 做消费者级幂等去重；Redis 未启用（`cch.Enabled()` 为 false）时 `handleRank` 直接返回，不写任何 ZSet。
 
 ### 3.3 计算周期与触发方式
 
-纯事件驱动：业务方写 Outbox 表 → `Runner.dispatchLoop` 每 `worker.outboxIntervalSeconds`（默认 2 秒）批量投递 Kafka → Worker 消费循环调用 `handle` → `handleRank` 更新 ZSet。模块内不存在定时重算、每日清零或全量回补任务。
+ZSet 计分纯事件驱动：业务方写 Outbox 表 → `Runner.dispatchLoop` 每 `worker.outboxIntervalSeconds`（默认 2 秒）批量投递 Kafka → Worker 消费循环调用 `handle` → `handleRank` 更新 ZSet。ZSet 计分不存在定时重算、每日清零或全量回补任务。
+
+另有一个定时回写任务：`Runner.Run` 启动 goroutine `hotScoreLoop`，每 5 分钟调用 `flushHotScore`，将 `rank:post:all` ZSet Top 200 的累计分经 `UpdateColumn` 写回 `posts.hot_score`（不更新 `updated_at`）；Redis 未启用时该循环直接返回。回写周期与 Top N 为 `internal/worker/runner.go` 中的硬编码值，无对应配置项。
 
 ### 3.4 结果存储
 
-结果只存 Redis ZSet，不落 DB 表。Key 由 `cache.RankKey(rankType, timeRange)` 生成，格式 `rank:{rankType}:{timeRange}`，实际被写入的 key 为：
+榜单结果存 Redis ZSet；post 榜 `all` 时间段的累计分另由 `hotScoreLoop` 每 5 分钟回写 `posts.hot_score`（Top 200），circle 榜不落库。Key 由 `cache.RankKey(rankType, timeRange)` 生成，格式 `rank:{rankType}:{timeRange}`，实际被写入的 key 为：
 
 - `rank:post:today` / `rank:post:week` / `rank:post:all`
 - `rank:circle:today` / `rank:circle:week` / `rank:circle:all`
@@ -92,7 +99,7 @@ member 为目标 ID 的十进制字符串，score 为事件加权累计分。ZSe
 - Redis ZSet：`rank:post:{today|week|all}`、`rank:circle:{today|week|all}`，member 为目标 ID 十进制字符串，score 为事件加权累计分，无 TTL。
 - `internal/cache/keys.go` 另定义 `UserRankKey` 生成 `rank:user:{type}:{range}`（如 `rank:user:creator:all`），当前无任何调用方，属于未使用的预留 key。
 - DB 回退读取依赖既有表与列：`posts`（`hot_score`、`like_count`、`comment_count`、`status`）、`users`（`point_count`、`post_count`、`like_count`、`level`、`status`）、`circles`（`member_count`、`post_count`、`featured_count`、`status`）、`topics`（`participant_count`、`post_count`、`status`）。
-- `posts.hot_score` 列带索引，业务代码中不存在写入路径，仅 `cmd/seed` 种子数据赋值，线上数据保持默认值 0。
+- `posts.hot_score` 列带索引，由 `hotScoreLoop` 每 5 分钟从 `rank:post:all` ZSet Top 200 回写（`UpdateColumn`），未进入 Top 200 的帖子保持原值；`cmd/seed` 种子数据亦赋值。
 
 ## 5. 配置项与限制
 
@@ -104,13 +111,15 @@ member 为目标 ID 的十进制字符串，score 为事件加权累计分。ZSe
 | `kafka.enabled`、`kafka.brokers`、`kafka.consumerGroup` | `true`、`localhost:9092`、`feedora-worker` | 控制榜单事件的消费通道 |
 | `worker.enabled`、`worker.batchSize`、`worker.outboxIntervalSeconds`、`worker.maxRetry` | `true`、`100`、`2`、`5` | 决定事件投递节奏与榜单更新时效 |
 
-不存在榜单计算周期类配置，因为不存在定时计算。当前实现的限制与否定事实：
+ZSet 计分为纯事件驱动，无计算周期类配置；`hotScoreLoop` 的 5 分钟回写周期与 Top 200 为硬编码常量。当前实现的限制与否定事实：
 
 - `internal/worker/rank/` 目录仅含 `doc.go` 占位文件，实际的榜单计算逻辑在 `internal/worker/handlers.go` 的 `handleRank` 中。
 - 话题榜单无任何写入方：不存在 `rank:topic:*` 的 ZSet 写入，`rankType=topic` 恒走 DB 回退。
 - 接口接受任意 `timeRange` 字符串拼入 key；非 `today` / `week` / `all` 的取值对应空 ZSet，结果同样来自 DB 回退，回退排序不区分时间范围。
 - `today` / `week` / `all` 三个 ZSet 写入值相同且无 TTL、无重置机制，时间范围参数对实际数据不产生差异。
-- `posts.hot_score` 无业务写入路径，post 榜 DB 回退中 `hot_score` 恒为 0（种子数据除外），实际排序主要由 `like_count`、`created_at` 决定。
+- `hot_score` 回写依赖 Redis：未启用 Redis 时 `hotScoreLoop` 跳过，`hot_score` 仍无业务写入路径（种子数据除外），post 榜 DB 回退实际由 `like_count`、`created_at` 决定排序。
+- `hot_score` 与 ZSet 最多相差一个回写周期（5 分钟），且回写仅覆盖 `rank:post:all` Top 200，未进榜帖子的 `hot_score` 不更新。
+- 取消互动多于互动时 ZSet 分数可为负，member 不会因负分被移出 ZSet；取消互动不追回已发放积分。
 - 用户/圈子排行榜不使用 `UserRankKey` ZSet，无 Redis 加速，每次请求直接查 DB。
 - ZSet 命中路径下 topic 榜单逐 ID 查询 `topics.FindByID`，存在 N+1 查询。
 
@@ -118,4 +127,5 @@ member 为目标 ID 的十进制字符串，score 为事件加权累计分。ZSe
 
 | 版本 | 日期 | 作者 | 说明 |
 | --- | --- | --- | --- |
+| v1.1 | 2026-09-09 | Feedora 项目组 | 取消互动热度减分（-3/-4），hot_score 每 5 分钟从 ZSet Top 200 回写 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

@@ -1,7 +1,7 @@
 ---
 title: 互动模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: interaction
 maintainer: Feedora 项目组
@@ -66,19 +66,19 @@ summary: 帖子与评论的点赞、收藏关系维护，含唯一索引幂等�
 | 点赞帖子 | `PostLiked` |
 | 取消点赞 | `PostUnliked` |
 | 收藏帖子 | `PostFavorited` |
-| 取消收藏 | 不发布（不存在 `PostUnfavorited` 事件类型） |
+| 取消收藏 | `PostUnfavorited`（常量 `event.PostUnfavorited`，仅在实际删除关系行时发布） |
 | 评论点赞/取消 | 不发布事件 |
 
 生产者由 `kafka.enabled` 决定：启用时为 `OutboxProducer`，事件先写 `event_outbox` 表，由 Worker 的 Outbox Dispatcher 定时批量投递 Kafka，失败按 10/30/60/300/600 秒退避重试，超过 `Worker.MaxRetry` 标记失败；未启用时为 `NoopProducer`，仅打印事件日志。
 
 Worker 消费 `{prefix}.interaction.events`，逐条分发给四个消费者，各自以 `idem.Claim(eventID, worker)` 独立幂等。互动事件的真实消费行为：
 
-| 消费者 | `PostLiked` | `PostFavorited` | `PostUnliked` |
-| --- | --- | --- | --- |
-| notification | 向帖子作者写"收到新的点赞"通知（作者与操作人相同时跳过），`Incr` `notify:unread:{authorID}` | "收到新的收藏"，同左 | 不处理 |
-| growth | 作者 +2 积分，动作 `post_liked` | 作者 +5 积分，动作 `post_favorited` | 不处理 |
-| rank | `rank:post:{today,week,all}` ZSet +3 分 | 同左 +4 分 | 不处理（不回扣分数） |
-| search | 不处理 | 不处理 | 不处理 |
+| 消费者 | `PostLiked` | `PostFavorited` | `PostUnliked` | `PostUnfavorited` |
+| --- | --- | --- | --- | --- |
+| notification | 向帖子作者写"收到新的点赞"通知（作者与操作人相同时跳过），`Incr` `notify:unread:{authorID}` | "收到新的收藏"，同左 | 不处理 | 不处理 |
+| growth | 作者 +2 积分，动作 `post_liked` | 作者 +5 积分，动作 `post_favorited` | 不处理 | 不处理 |
+| rank | `rank:post:{today,week,all}` ZSet +3 分 | 同左 +4 分 | ZSet -3 分 | ZSet -4 分 |
+| search | 不处理 | 不处理 | 不处理 | 不处理 |
 
 ### counter 消费者现状
 
@@ -114,7 +114,7 @@ Worker 消费 `{prefix}.interaction.events`，逐条分发给四个消费者，�
 
 当前实现的边界与否定事实：
 
-- 取消收藏不发布事件；`PostUnliked` 虽被发布但四个消费者均不处理，取消点赞不回扣积分与榜单分数。
+- 取消点赞与取消收藏事件由 rank 消费者回扣榜单分数（`PostUnliked` -3、`PostUnfavorited` -4）；notification、growth、search 消费者不处理取消类事件，取消互动不撤销已生成的通知、不回退积分。
 - 评论点赞不发布事件、不影响作者 `users.like_count`、不失效任何缓存。
 - 关系写入与计数更新无事务保证，两者可能不一致；不存在对账或修复任务。
 - 我的点赞/收藏列表每次请求全量加载关系 ID 后内存分页，关系量大时开销线性增长。
@@ -124,4 +124,5 @@ Worker 消费 `{prefix}.interaction.events`，逐条分发给四个消费者，�
 
 | 版本 | 日期 | 作者 | 说明 |
 | --- | --- | --- | --- |
+| v1.1 | 2026-09-09 | Feedora 项目组 | 修正事件发布描述：取消收藏补发 `PostUnfavorited`，消费行为表同步更新 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

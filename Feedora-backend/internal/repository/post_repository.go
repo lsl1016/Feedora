@@ -162,9 +162,12 @@ func (r *PostRepository) CreateWithRelations(p *model.Post, images []string, tag
 			}
 			t.Model(&model.Topic{}).Where("id = ?", tid).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
 		}
-		t.Model(&model.User{}).Where("id = ?", p.AuthorID).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
-		if p.CircleID != nil {
-			t.Model(&model.Circle{}).Where("id = ?", *p.CircleID).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
+		// 计数只统计已发布帖子，草稿 / 定时帖在发布前不占计数。
+		if p.Status == model.PostPublished {
+			t.Model(&model.User{}).Where("id = ?", p.AuthorID).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
+			if p.CircleID != nil {
+				t.Model(&model.Circle{}).Where("id = ?", *p.CircleID).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
+			}
 		}
 		return nil
 	})
@@ -189,10 +192,34 @@ func (r *PostRepository) ReplaceImages(postID int64, images []string) {
 	}
 }
 
-// SoftDelete 软删除帖子并将状态标记为 deleted。
-func (r *PostRepository) SoftDelete(id int64) {
-	r.db.Model(&model.Post{}).Where("id = ?", id).Update("status", model.PostDeleted)
-	r.db.Delete(&model.Post{}, id)
+// SoftDeleteWithCounters 在事务中软删除帖子；原状态为已发布时对称回减用户、话题、圈子、标签计数。
+func (r *PostRepository) SoftDeleteWithCounters(p *model.Post) {
+	_ = tx(r.db, func(t *gorm.DB) error {
+		if err := t.Model(&model.Post{}).Where("id = ?", p.ID).Update("status", model.PostDeleted).Error; err != nil {
+			return err
+		}
+		if err := t.Delete(&model.Post{}, p.ID).Error; err != nil {
+			return err
+		}
+		if p.Status != model.PostPublished {
+			return nil
+		}
+		t.Model(&model.User{}).Where("id = ?", p.AuthorID).UpdateColumn("post_count", gorm.Expr("GREATEST(post_count - 1, 0)"))
+		if p.CircleID != nil {
+			t.Model(&model.Circle{}).Where("id = ?", *p.CircleID).UpdateColumn("post_count", gorm.Expr("GREATEST(post_count - 1, 0)"))
+		}
+		var topicIDs []int64
+		t.Model(&model.PostTopic{}).Where("post_id = ?", p.ID).Pluck("topic_id", &topicIDs)
+		for _, tid := range topicIDs {
+			t.Model(&model.Topic{}).Where("id = ?", tid).UpdateColumn("post_count", gorm.Expr("GREATEST(post_count - 1, 0)"))
+		}
+		var tagIDs []int64
+		t.Model(&model.PostTag{}).Where("post_id = ?", p.ID).Pluck("tag_id", &tagIDs)
+		for _, tid := range tagIDs {
+			t.Model(&model.Tag{}).Where("id = ?", tid).UpdateColumn("use_count", gorm.Expr("GREATEST(use_count - 1, 0)"))
+		}
+		return nil
+	})
 }
 
 // IncColumn 对计数列做增量（可为负）。

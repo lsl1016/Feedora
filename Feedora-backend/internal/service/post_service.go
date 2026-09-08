@@ -253,9 +253,6 @@ func (s *PostService) Create(authorID int64, in dto.CreatePostRequest) (*dto.Pos
 	if err := s.posts.CreateWithRelations(p, in.Images, dedup(in.TagIDs), dedup(in.TopicIDs)); err != nil {
 		return nil, errs.ErrInternal
 	}
-	if status == model.PostPublished {
-		s.users.IncColumn(authorID, "post_count", 1)
-	}
 	s.producer.Publish(event.TopicPost, event.PostCreated, p.ID, authorID, map[string]any{"title": p.Title})
 	return s.Get(p.ID, authorID)
 }
@@ -315,7 +312,7 @@ func (s *PostService) SetHidden(id, userID int64, hidden bool) error {
 	if hidden {
 		s.producer.Publish(event.TopicPost, event.PostHidden, id, userID, nil)
 	} else {
-		s.producer.Publish(event.TopicPost, "PostUnhidden", id, userID, nil)
+		s.producer.Publish(event.TopicPost, event.PostUnhidden, id, userID, nil)
 	}
 	return nil
 }
@@ -332,8 +329,7 @@ func (s *PostService) Delete(id, userID int64, isAdmin bool) error {
 	if p.AuthorID != userID && !isAdmin {
 		return errs.ErrPostNoPermission
 	}
-	s.posts.SoftDelete(id)
-	s.users.IncColumn(p.AuthorID, "post_count", -1)
+	s.posts.SoftDeleteWithCounters(p)
 	s.InvalidateDetail(id)
 	s.producer.Publish(event.TopicPost, event.PostDeleted, id, userID, nil)
 	return nil

@@ -170,7 +170,7 @@ func (s *CommentService) Delete(commentID, userID int64, isAdmin bool) error {
 	if m.UserID != userID && !isAdmin {
 		return errs.ErrForbidden
 	}
-	s.comments.SoftDelete(m)
+	s.comments.DeleteWithCounters(m)
 	s.cache.Del(context.Background(), cache.PostDetailKey(m.PostID))
 	return nil
 }

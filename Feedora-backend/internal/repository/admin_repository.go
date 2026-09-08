@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/feedora/backend/internal/model"
 	"gorm.io/gorm"
 )
@@ -43,4 +45,29 @@ func (r *AdminRepository) Stats() (users, posts, comments, circles int64) {
 	r.db.Model(&model.Comment{}).Count(&comments)
 	r.db.Model(&model.Circle{}).Count(&circles)
 	return
+}
+
+// GetPostByID 按 ID 查询帖子，不存在返回 nil。
+func (r *AdminRepository) GetPostByID(id int64) *model.Post {
+	var p model.Post
+	if err := r.db.First(&p, id).Error; err != nil {
+		return nil
+	}
+	return &p
+}
+
+// UpdatePostStatus 更新帖子状态（上下架）。
+func (r *AdminRepository) UpdatePostStatus(id int64, status string) error {
+	return r.db.Model(&model.Post{}).Where("id = ?", id).Update("status", status).Error
+}
+
+// UpdateUserStatus 更新用户状态（封禁 / 解禁）。
+func (r *AdminRepository) UpdateUserStatus(id int64, status string) error {
+	return r.db.Model(&model.User{}).Where("id = ?", id).Update("status", status).Error
+}
+
+// AddLog 写入后台操作日志。
+func (r *AdminRepository) AddLog(l *model.OperationLog) {
+	l.CreatedAt = time.Now()
+	r.db.Create(l)
 }

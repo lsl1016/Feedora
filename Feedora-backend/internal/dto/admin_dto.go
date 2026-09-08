@@ -145,6 +145,16 @@ type UpdateTopicRequest struct {
 	Status        *string `json:"status" example:"enabled"`               // 话题状态。
 }
 
+// AdminUserStatusRequest 后台变更用户状态请求（封禁 / 解禁）。
+type AdminUserStatusRequest struct {
+	Status string `json:"status" binding:"required" example:"banned"` // 目标状态：normal / banned。
+}
+
+// AdminPostStatusRequest 后台变更帖子状态请求（上下架）。
+type AdminPostStatusRequest struct {
+	Status string `json:"status" binding:"required" example:"takedown"` // 目标状态：published / hidden / takedown。
+}
+
 // AdminStatsResponse 后台统计响应。
 type AdminStatsResponse struct {
 	TraceEnvelope

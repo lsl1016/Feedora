@@ -90,3 +90,20 @@ func (r *TopicRepository) FindByPostIDs(postIDs []int64) map[int64][]model.Topic
 	}
 	return res
 }
+
+// RecomputeParticipantCountsByPost 按帖子重算其所属话题的参与人数
+// （统计未删除帖子的去重作者数），幂等，供 worker 在帖子创建 / 删除后调用。
+func (r *TopicRepository) RecomputeParticipantCountsByPost(postID int64) {
+	sql := `
+UPDATE topics t
+SET participant_count = (
+	SELECT COUNT(DISTINCT p.author_id)
+	FROM post_topics pt
+	JOIN posts p ON p.id = pt.post_id
+		AND p.deleted_at IS NULL
+		AND p.status <> 'deleted'
+	WHERE pt.topic_id = t.id
+)
+WHERE t.id IN (SELECT topic_id FROM post_topics WHERE post_id = ?)`
+	r.db.Exec(sql, postID)
+}

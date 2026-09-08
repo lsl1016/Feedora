@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -107,6 +108,22 @@ func (c *Cache) GetInt(ctx context.Context, key string) int64 {
 	}
 	n, _ := c.rdb.Get(ctx, key).Int64()
 	return n
+}
+
+// GetIntOK 读取整型计数并区分「未命中」（Key 不存在或不可解析时 ok 为 false）。
+func (c *Cache) GetIntOK(ctx context.Context, key string) (int64, bool) {
+	if !c.Enabled() {
+		return 0, false
+	}
+	s, err := c.rdb.Get(ctx, key).Result()
+	if err != nil {
+		return 0, false
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return n, true
 }
 
 // SetInt 设置整型值。

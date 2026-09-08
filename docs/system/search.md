@@ -1,7 +1,7 @@
 ---
 title: 搜索模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: search
 maintainer: Feedora 项目组
@@ -13,9 +13,11 @@ related_code:
   - internal/service/search_service.go
   - internal/search/client.go
   - pkg/esx/elasticsearch.go
+  - internal/event/event_type.go
+  - internal/event/topic.go
   - internal/worker/handlers.go
   - internal/worker/index.go
-summary: 搜索模块基于 Elasticsearch 提供帖子、用户、圈子、话题四类对象的综合搜索、帖子标题联想与 Redis 热词榜，索引数据由业务事件经 Outbox 与 Kafka 异步同步，并在 Worker 启动时全量重建。
+summary: 搜索模块基于 Elasticsearch 提供帖子、用户、圈子、话题四类对象的综合搜索、帖子标题联想与 Redis 热词榜，索引数据由业务事件（含话题创建/更新）经 Outbox 与 Kafka 异步同步，并在 Worker 启动时全量重建。
 ---
 
 ## 1. 模块概述
@@ -51,7 +53,7 @@ summary: 搜索模块基于 Elasticsearch 提供帖子、用户、圈子、话�
 
 ### 3.3 索引同步链路
 
-同步链路为：业务 Service 写库后发布事件 → `event.OutboxProducer` 写入 MySQL `event_outbox` 表（topic 为 `kafka.topicPrefix` + `.` + topic 名，默认前缀 `feedora`）→ Worker 的 `dispatchLoop` 按 `worker.outboxIntervalSeconds` 间隔批量取出 pending 记录投递 Kafka（失败按 10/30/60/300/600 秒退避重试，超过 `worker.maxRetry` 标记 failed）→ Worker 消费组（`kafka.consumerGroup`，默认 `feedora-worker`）消费 `feedora.post.events`、`feedora.user.events`、`feedora.circle.events` 等 topic → `Runner.handleSearch` 以 `search` 为 worker 名做幂等 Claim 后从 MySQL 重新加载实体 → 调用 `IndexDoc`/`DeleteDoc` 写入 ES（每次写入均带 `refresh=true`）。
+同步链路为：业务 Service 写库后发布事件 → `event.OutboxProducer` 写入 MySQL `event_outbox` 表（topic 为 `kafka.topicPrefix` + `.` + topic 名，默认前缀 `feedora`）→ Worker 的 `dispatchLoop` 按 `worker.outboxIntervalSeconds` 间隔批量取出 pending 记录投递 Kafka（失败按 10/30/60/300/600 秒退避重试，超过 `worker.maxRetry` 标记 failed）→ Worker 消费组（`kafka.consumerGroup`，默认 `feedora-worker`）消费 `feedora.post.events`、`feedora.user.events`、`feedora.circle.events`、`feedora.topic.events` 等 topic → `Runner.handleSearch` 以 `search` 为 worker 名做幂等 Claim 后从 MySQL 重新加载实体 → 调用 `IndexDoc`/`DeleteDoc` 写入 ES（每次写入均带 `refresh=true`）。
 
 `handleSearch` 处理的事件类型：
 
@@ -60,6 +62,9 @@ summary: 搜索模块基于 Elasticsearch 提供帖子、用户、圈子、话�
 | `PostCreated`、`PostUpdated`、`PostHidden`、`PostDeleted`、`PostUnhidden` | `feedora.post.events` | `indexPostByID`：帖子不存在或状态为 `deleted` 时从索引删除文档，否则重建帖子文档（含作者昵称、标签名、话题名） |
 | `UserRegistered` | `feedora.user.events` | `indexUser`：写入用户文档 |
 | `CircleCreated` | `feedora.circle.events` | `indexCircle`：写入圈子文档 |
+| `TopicCreated`、`TopicUpdated` | `feedora.topic.events` | `indexTopic`：按 `AggregateID` 回查话题，存在时重建话题文档，不存在时跳过（事件由后台 `CreateTopic` / `UpdateTopic` 成功后发布） |
+
+`feedora.topic.events` 由 Worker 启动时 `EnsureTopics` 预建，与其他业务 topic 一致。话题删除不发布事件。
 
 Worker 启动时（`Runner.Run`）先调用 `EnsureIndices` 确保四个索引存在，随后执行 `reindexAll` 全量重建：帖子取 `status <> deleted`，用户取 `status <> banned`，圈子取 `status = normal`，话题取 `status = enabled`，逐条重新写入索引。
 
@@ -89,7 +94,7 @@ Worker 启动时（`Runner.Run`）先调用 `EnsureIndices` 确保四个索引�
 
 ### 3.8 当前实现的局限
 
-- 话题索引只有 Worker 启动时的全量重建，没有任何话题变更事件，话题的新增与修改不会增量同步到索引。
+- 话题创建与更新（后台接口）经 `TopicCreated` / `TopicUpdated` 事件增量同步到索引；话题删除不发布事件，已删话题的文档保留在索引中，直到下次 Worker 启动全量重建。
 - 用户文档仅在 `UserRegistered` 事件时写入，昵称、简介等资料修改不产生事件，索引中的用户信息会过期。
 - 圈子文档仅在 `CircleCreated` 事件时写入，圈子资料修改、成员数与帖子数变化不同步。
 - 帖子文档中的 `likeCount`、`commentCount`、`favoriteCount`、`hotScore` 仅在帖子自身的增删改事件触发重建时刷新，点赞、评论、收藏事件不触发帖子重建，计数在索引中长期滞后。
@@ -168,4 +173,5 @@ Worker 启动时（`Runner.Run`）先调用 `EnsureIndices` 确保四个索引�
 
 | 版本 | 日期 | 维护者 | 说明 |
 |---|---|---|---|
+| v1.1 | 2026-09-09 | Feedora 项目组 | 新增 TopicCreated/TopicUpdated 事件与 topic.events 订阅，话题索引增量同步 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

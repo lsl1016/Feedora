@@ -4,7 +4,9 @@ package router
 func registerAdmin(x *ctx) {
 	g := x.v1.Group("/admin", x.authMW, x.adminMW)
 	g.GET("/users", x.h.Admin.Users)
+	g.PUT("/users/:userId/status", x.h.Admin.UserStatus)
 	g.GET("/posts", x.h.Admin.Posts)
+	g.PUT("/posts/:postId/status", x.h.Admin.PostStatus)
 	g.GET("/comments", x.h.Admin.Comments)
 	g.GET("/tags", x.h.Admin.Tags)
 	g.POST("/tags", x.h.Admin.CreateTag)

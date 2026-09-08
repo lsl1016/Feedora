@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
+	"github.com/feedora/backend/pkg/middleware"
 	"github.com/feedora/backend/pkg/response"
 	"github.com/gin-gonic/gin"
 )
@@ -248,6 +249,60 @@ func (h *AdminAPI) Circles(c *gin.Context) {
 // @Router   /admin/dashboard/stats [get]
 func (h *AdminAPI) Stats(c *gin.Context) {
 	response.OK(c, h.svc.Stats())
+}
+
+// UserStatus 封禁 / 解禁用户
+// @Summary  封禁 / 解禁用户
+// @Tags     后台管理
+// @Accept   json
+// @Produce  json
+// @Param    userId  path  int                         true  "用户 ID"
+// @Param    req     body  dto.AdminUserStatusRequest  true  "目标状态"
+// @Success  200  {object}  response.Body
+// @Failure  400  {object}  response.Body
+// @Security BearerAuth
+// @Router   /admin/users/{userId}/status [put]
+func (h *AdminAPI) UserStatus(c *gin.Context) {
+	var uri dto.UserIDURI
+	if !bindURI(c, &uri) {
+		return
+	}
+	var req dto.AdminUserStatusRequest
+	if !bindJSON(c, &req) {
+		return
+	}
+	if err := h.svc.SetUserStatus(middleware.CurrentUserID(c), uri.UserID, req.Status); err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, gin.H{"updated": true})
+}
+
+// PostStatus 帖子上下架
+// @Summary  帖子上下架（published / hidden / takedown）
+// @Tags     后台管理
+// @Accept   json
+// @Produce  json
+// @Param    postId  path  int                         true  "帖子 ID"
+// @Param    req     body  dto.AdminPostStatusRequest  true  "目标状态"
+// @Success  200  {object}  response.Body
+// @Failure  400  {object}  response.Body
+// @Security BearerAuth
+// @Router   /admin/posts/{postId}/status [put]
+func (h *AdminAPI) PostStatus(c *gin.Context) {
+	var uri dto.PostIDURI
+	if !bindURI(c, &uri) {
+		return
+	}
+	var req dto.AdminPostStatusRequest
+	if !bindJSON(c, &req) {
+		return
+	}
+	if err := h.svc.SetPostStatus(middleware.CurrentUserID(c), uri.PostID, req.Status); err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.OK(c, gin.H{"updated": true})
 }
 
 // Logs 操作日志列表

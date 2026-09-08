@@ -1,7 +1,7 @@
 ---
 title: 话题模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: topic
 maintainer: Feedora 项目组
@@ -14,7 +14,8 @@ related_code:
   - internal/repository/topic_repository.go
   - internal/model/topic.go
   - internal/model/post.go
-summary: 话题模块提供话题广场（all/official/hot 分类）、话题详情与话题下帖子列表的只读查询能力，话题的创建与维护由后台接口承担，帖子发帖时在事务内绑定话题并同步维护 topics.post_count 计数。
+  - internal/worker/handlers.go
+summary: 话题模块提供话题广场（all/official/hot 分类）、话题详情与话题下帖子列表的只读查询能力，话题的创建与维护由后台接口承担，帖子发帖时在事务内绑定话题并同步维护 topics.post_count 计数，参与人数由 Worker 消费帖子创建/删除事件落库重算。
 ---
 
 ## 1. 模块概述
@@ -69,7 +70,7 @@ summary: 话题模块提供话题广场（all/official/hot 分类）、话题详
 - 创建：`name` 为必填（DTO `binding:"required"` 且 service 层再判空，不做 trim）；新话题固定 `status = enabled`，`is_official` 由请求指定，`is_recommended` 创建时不可指定（默认 `false`，仅能通过更新接口设置）。
 - 创建不预先查询重名，直接 `INSERT`，唯一索引 `uk_topic_name` 兜底去重；`Create` 返回任意错误（含非重名的数据库错误）时统一返回 `409 话题已存在`。
 - 更新：白名单字段为 `name`、`description`、`cover_url`、`is_official`、`is_recommended`、`status`，全部为可选指针字段，仅更新请求中出现的字段并刷新 `updated_at`；`status` 取值不做枚举校验。更新语句影响 0 行不报错，随后回查记录，不存在时返回 `404`。
-- 后台创建与更新话题不发布事件，worker 不感知话题变更；搜索索引中的话题数据仅在 worker 启动时全量重建（仅索引 `status = enabled` 的话题）。
+- 后台创建与更新话题在写库成功后向 `topic.events` 发布 `TopicCreated` / `TopicUpdated` 事件（`AdminService` 注入 producer），Worker 据此增量重建 ES 话题索引；worker 启动时仍会全量重建（仅索引 `status = enabled` 的话题）。话题删除不发布事件。
 
 ### 3.5 帖子绑定话题与计数维护
 
@@ -79,11 +80,16 @@ summary: 话题模块提供话题广场（all/official/hot 分类）、话题详
 - 绑定前不校验话题存在性与状态：传入不存在的 `topicID` 仍会插入 `post_topics` 记录（表上无外键约束），对应的计数 UPDATE 影响 0 行不报错，产生无话题对应的孤儿关联；已禁用的话题同样可被绑定。
 - 帖子装配时的批量回查 `FindByPostIDs` 通过 `JOIN topics` 仅取 `id`/`name` 两个字段，按 `postID` 分组；孤儿关联记录因 JOIN 无匹配被自然排除，不影响帖子返回。
 - 帖子编辑接口不支持修改话题绑定（`UpdatePostRequest` 无话题字段，service 层不触达 `post_topics`）。
-- 帖子隐藏与软删除均不删除 `post_topics` 记录，也不回减 `topics.post_count`；被删帖子因状态过滤不再出现在话题帖列表，但话题计数与关联记录保留。
+- 帖子隐藏与软删除均不删除 `post_topics` 记录，也不回减 `topics.post_count`；软删除事件会触发参与人数重算（见 3.6），`post_count` 不变。被删帖子因状态过滤不再出现在话题帖列表，但关联记录保留。
 
 ### 3.6 参与人数计数
 
-`topics.participant_count` 在全部代码中没有任何写入或递增逻辑，仅在 `hot` 排序、话题榜单、搜索索引文档与 DTO 展示中读取，初始值为默认值 0（种子数据亦不设置）。因此 `hot` 分类与话题榜单在当前数据状态下实际退化为按 `post_count` 排序。
+`topics.participant_count` 由 Worker 事件驱动落库重算维护：
+
+- Worker 消费 `PostCreated` / `PostDeleted` 事件后（幂等名 `stat`，见 3.7），调用 `TopicRepository.RecomputeParticipantCountsByPost(postID)`：单条 UPDATE 按 `post_topics` 反查该帖子所属话题，将每个话题的 `participant_count` 置为话题下未删除帖子（`deleted_at IS NULL` 且 `status <> 'deleted'`，隐藏帖仍计入）的去重作者数 `COUNT(DISTINCT author_id)`；语句幂等，重复执行结果一致。
+- 重算仅覆盖该帖子关联的话题；帖子隐藏 / 恢复不触发重算。
+- 链路依赖 worker 与 Kafka 启用：`kafka.enabled=false` 时不产生任何重算，字段保持初始值 0，可用 `scripts/recount.sql` 第 4 节一次性校准（脚本口径为 `status = 'published'`，比重算口径更严格）。
+- 种子数据不设置该字段；无重算发生时初始值为 0。
 
 ### 3.7 其他模块对本模块数据的复用
 
@@ -92,7 +98,8 @@ summary: 话题模块提供话题广场（all/official/hot 分类）、话题详
 | 搜索模块（`SearchService`） | `type = topic` 时查询 ES 话题索引取 ID，再回库 `FindByID` 装配（不过滤状态） |
 | 榜单模块（`RankService`） | 话题热门榜优先读 Redis ZSet；为空时回退 DB 查询（`status = enabled`，`participant_count DESC, post_count DESC`），回查 `FindByID` 装配名称与计数 |
 | 关注模块（`FollowRepository.ParticipatedTopics`） | 以当前用户未软删帖子的 `post_topics` 子查询推导"用户发帖涉及的话题"，作为"关注的话题"数据源；过滤 `status = enabled`，按 `id DESC` 排序 |
-| worker（`indexTopic`） | worker 启动时将全部 `status = enabled` 的话题全量写入 ES 话题索引 |
+| worker（`indexTopic`） | worker 启动时将全部 `status = enabled` 的话题全量写入 ES 话题索引；消费 `TopicCreated` / `TopicUpdated` 事件增量重建 |
+| worker（`handleStat`） | 消费 `PostCreated` / `PostDeleted` 事件（幂等名 `stat`），按帖子重算所属话题的 `participant_count`（见 3.6） |
 
 系统不存在独立的话题关注（订阅）实体：用户与话题的关系仅由发帖行为间接产生。
 
@@ -108,7 +115,7 @@ summary: 话题模块提供话题广场（all/official/hot 分类）、话题详
 | `cover_url` | `size:512` | 封面图片 URL |
 | `is_official` | 默认 `false` | 是否官方话题，`official` 分类的过滤依据 |
 | `is_recommended` | 默认 `false`，索引 | 是否推荐，仅后台可更新，当前查询侧无使用 |
-| `participant_count` | 默认 `0` | 参与人数，无写入逻辑，恒为 0 |
+| `participant_count` | 默认 `0` | 参与人数，Worker 事件驱动重算（见 3.6），未启用 Kafka 时保持 0 |
 | `post_count` | 默认 `0` | 帖子数冗余计数，绑定帖子时事务内 +1，不回减 |
 | `status` | `size:32`，默认 `enabled`，索引 | `enabled` / `disabled`，广场列表与关注推导均过滤 `enabled` |
 | `created_at` / `updated_at` | 时间戳 | 创建/更新时间 |
@@ -130,16 +137,17 @@ summary: 话题模块提供话题广场（all/official/hot 分类）、话题详
 
 当前实现的限制：
 
-- `participant_count` 无任何维护逻辑，`hot` 分类与话题榜单实际由 `post_count` 决定排序。
+- `participant_count` 依赖 worker + Kafka 的事件重算：`kafka.enabled=false` 时恒为 0，`hot` 分类与话题榜单实际由 `post_count` 决定排序；重算口径含隐藏帖（仅排除 deleted）。
 - 绑定话题不校验存在性与状态，可产生指向不存在话题的孤儿 `post_topics` 记录。
 - 帖子删除、隐藏不回减 `topics.post_count`，计数只增不减，与话题下实际可见帖子数产生偏差；帖子编辑不支持调整话题绑定。
 - 话题详情接口不区分话题状态，`disabled` 话题仍可按 ID 访问。
 - 后台创建话题把所有数据库错误统一映射为 `409 话题已存在`；更新接口对 `status` 取值不做枚举校验。
-- 话题创建/更新不发布事件，搜索索引仅在 worker 启动时全量重建，后台改动不实时同步到索引。
+- 话题创建/更新发布 `TopicCreated` / `TopicUpdated` 事件增量同步 ES 索引；话题删除不发布事件，索引残留靠下次全量重建收敛。
 - `is_recommended` 字段有索引但查询侧无任何使用。
 
 ## 6. 历史版本
 
 | 版本 | 日期 | 维护者 | 说明 |
 |---|---|---|---|
+| v1.1 | 2026-09-09 | Feedora 项目组 | participant_count 改为事件驱动落库重算；话题创建/更新发布事件 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

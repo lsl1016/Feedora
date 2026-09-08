@@ -1,7 +1,7 @@
 ---
 title: 文件模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: file
 maintainer: Feedora 项目组
@@ -80,7 +80,7 @@ type Storage interface {
 - `Delete` 直接 `os.Remove` 对应文件，当前无任何调用方。
 - `PublicURL` 拼装规则为 `{publicBaseURL}/{objectKey}`。
 
-`pkg/ossx/minio.go` 与 `pkg/ossx/aliyun.go` 为阶段二占位文件，仅含注释、无任何实现代码。`internal/app/app.go` 在依赖装配处无条件调用 `ossx.NewLocalStorage(cfg.OSS.BasePath, cfg.OSS.PublicBaseUrl)` 构造存储实例：配置键 `oss.type` 虽已定义并被解析，但当前不参与实现选择，配置为其他值不会切换实现。
+`pkg/ossx/minio.go` 与 `pkg/ossx/aliyun.go` 为阶段二占位文件，仅含注释、无任何实现代码。`internal/app/app.go` 按配置键 `oss.type` 选择实现：取值为空或 `local` 时构造 `ossx.NewLocalStorage(cfg.OSS.BasePath, cfg.OSS.PublicBaseUrl)`；取其他值（如 `minio`、`aliyun`）时启动直接报错 `不支持的 oss.type=...（minio / aliyun 尚未实现，请使用 local）` 退出。
 
 ### 3.4 静态访问与 URL 返回
 
@@ -112,7 +112,7 @@ type Storage interface {
 
 | 配置键 | 默认值（configs/config.yaml） | 说明 |
 |--------|------------------------------|------|
-| `oss.type` | `local` | 存储类型标识。当前实现不读取该值做选择，始终使用 LocalStorage |
+| `oss.type` | `local` | 存储类型。空或 `local` 使用 LocalStorage；其他值启动报错（minio / aliyun 未实现） |
 | `oss.basePath` | `./uploads` | 本地存储根目录，空值时代码回退 `./uploads` |
 | `oss.publicBaseUrl` | `http://localhost:8090/static` | 文件 URL 前缀，需与 `/static` 静态路由匹配 |
 
@@ -124,7 +124,7 @@ type Storage interface {
 - 大小校验依赖 multipart 头声明值，不按实际写入字节复核。
 - 文件记录写入失败被静默忽略，接口仍返回成功。
 - 无文件删除接口与文件记录清理机制，`Storage.Delete` 无调用方，存储空间只增不减。
-- MinIO 与阿里云 OSS 实现为空占位，`oss.type` 配置项无实际分发作用。
+- MinIO 与阿里云 OSS 实现为空占位，`oss.type` 配置为这些值时服务启动失败（fail-fast），不静默降级为本地存储。
 - 本地磁盘存储无访问控制，`/static` 下所有文件可被匿名公开访问。
 - 单机本地存储，多实例部署时文件不共享。
 
@@ -132,4 +132,5 @@ type Storage interface {
 
 | 版本 | 日期 | 作者 | 说明 |
 |------|------|------|------|
+| v1.1 | 2026-09-09 | Feedora 项目组 | oss.type 配置生效：空/local 走本地存储，未实现类型启动报错 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

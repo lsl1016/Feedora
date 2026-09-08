@@ -65,6 +65,10 @@ func (h *GrowthAPI) ClaimTask(c *gin.Context) {
 	if !bindURI(c, &req) {
 		return
 	}
+	if err := h.svc.ClaimTask(middleware.CurrentUserID(c), req.TaskID); err != nil {
+		response.Fail(c, err)
+		return
+	}
 	response.OK(c, gin.H{"claimed": true})
 }
 

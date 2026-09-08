@@ -63,11 +63,19 @@ func (r *CommentRepository) CreateWithCounters(c *model.Comment) error {
 	})
 }
 
-// SoftDelete 软删除评论并递减帖子评论数。
-func (r *CommentRepository) SoftDelete(c *model.Comment) {
-	r.db.Model(&model.Comment{}).Where("id = ?", c.ID).Update("status", model.CommentDeleted)
-	r.db.Delete(&model.Comment{}, c.ID)
-	r.db.Model(&model.Post{}).Where("id = ?", c.PostID).UpdateColumn("comment_count", gorm.Expr("GREATEST(comment_count - 1, 0)"))
+// DeleteWithCounters 在事务中软删除评论，并递减帖子、用户评论数。
+func (r *CommentRepository) DeleteWithCounters(c *model.Comment) {
+	_ = tx(r.db, func(t *gorm.DB) error {
+		if err := t.Model(&model.Comment{}).Where("id = ?", c.ID).Update("status", model.CommentDeleted).Error; err != nil {
+			return err
+		}
+		if err := t.Delete(&model.Comment{}, c.ID).Error; err != nil {
+			return err
+		}
+		t.Model(&model.Post{}).Where("id = ?", c.PostID).UpdateColumn("comment_count", gorm.Expr("GREATEST(comment_count - 1, 0)"))
+		t.Model(&model.User{}).Where("id = ?", c.UserID).UpdateColumn("comment_count", gorm.Expr("GREATEST(comment_count - 1, 0)"))
+		return nil
+	})
 }
 
 // IncLikeCount 对评论点赞数做增量（可为负）。

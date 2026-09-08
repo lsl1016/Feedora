@@ -26,4 +26,7 @@ var (
 	ErrCircleMuted       = New(40002, "你已被该圈子禁言")
 	ErrCircleNotJoined   = New(40003, "未加入圈子")
 	ErrUploadFailed      = New(50001, "文件上传失败")
+	ErrTaskNotDone       = New(60001, "任务进度未达标，暂不能领取")
+	ErrTaskClaimed       = New(60002, "任务奖励已领取过")
+	ErrTaskClaimViaCheckIn = New(60003, "该任务通过每日签到完成，无需领取")
 )

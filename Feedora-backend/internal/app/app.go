@@ -67,9 +67,16 @@ func New(configPath string) (*App, error) {
 		logger.Infof("Elasticsearch 连接成功")
 	}
 
-	storage, err := ossx.NewLocalStorage(cfg.OSS.BasePath, cfg.OSS.PublicBaseUrl)
-	if err != nil {
-		return nil, fmt.Errorf("初始化存储失败: %w", err)
+	var storage *ossx.LocalStorage
+	switch cfg.OSS.Type {
+	case "", "local":
+		storage, err = ossx.NewLocalStorage(cfg.OSS.BasePath, cfg.OSS.PublicBaseUrl)
+		if err != nil {
+			return nil, fmt.Errorf("初始化存储失败: %w", err)
+		}
+	default:
+		// minio / aliyun 实现尚未落地，显式失败优于静默降级为本地磁盘。
+		return nil, fmt.Errorf("不支持的 oss.type=%q（minio / aliyun 尚未实现，请使用 local）", cfg.OSS.Type)
 	}
 	jm := jwtx.NewManager(cfg.JWT.Secret, cfg.JWT.ExpireHours)
 
@@ -108,10 +115,10 @@ func New(configPath string) (*App, error) {
 	circleSvc := service.NewCircleService(circleRepo, userRepo, postSvc, producer, cch)
 	userSvc := service.NewUserService(userRepo, interRepo, postSvc, commentSvc, cch)
 	fileSvc := service.NewFileService(fileRepo, storage)
-	adminSvc := service.NewAdminService(adminRepo, userRepo, tagRepo, topicRepo, circleRepo, commentRepo)
+	adminSvc := service.NewAdminService(adminRepo, userRepo, tagRepo, topicRepo, circleRepo, commentRepo, producer)
 	searchSvc := service.NewSearchService(searchClient, postRepo, userRepo, topicRepo, circleRepo, postSvc, cch)
 	rankSvc := service.NewRankService(db, postRepo, userRepo, topicRepo, circleRepo, cch)
-	notifSvc := service.NewNotificationService(notifRepo)
+	notifSvc := service.NewNotificationService(notifRepo, cch)
 	growthSvc := service.NewGrowthService(growthRepo, userRepo, rankSvc)
 	followSvc := service.NewFollowService(followRepo, userRepo, postSvc, producer, cch)
 

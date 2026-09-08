@@ -73,6 +73,7 @@ func (s *InteractionService) SetFavorite(postID, userID int64, fav bool) (*dto.I
 	} else {
 		if s.inters.RemovePostFavorite(postID, userID) {
 			s.posts.IncColumn(postID, "favorite_count", -1)
+			s.producer.Publish(event.TopicInteraction, event.PostUnfavorited, postID, userID, nil)
 		}
 	}
 	s.invalidate(postID)

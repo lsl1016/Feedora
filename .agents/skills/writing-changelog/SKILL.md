@@ -1,6 +1,6 @@
 ---
 name: writing-changelog
-description: Use when code has just been modified and a version change record is needed, or when one module has accumulated many scattered changelog documents that should be consolidated - triggers include "写变更记录", "生成changelog", "变更文档", "记录这次改动", "合并changelog", "文档太多了整合一下", "write a changelog", "consolidate changelogs"
+description: Use ONLY when the user explicitly requests a change record or changelog consolidation - explicit signals include "写变更记录", "生成changelog", "记录这次改动", "补变更文档", "合并changelog", "整合changelog", "write a changelog", "consolidate changelogs". Do NOT trigger merely because code was just modified; without an explicit user signal, finish the task without generating a changelog and without asking whether to generate one
 ---
 
 # 变更记录与整合
@@ -13,12 +13,13 @@ description: Use when code has just been modified and a version change record is
 
 ## 何时使用 / 何时不用
 
-**使用：**
-- 刚改完代码，需要留下变更记录
-- 用户说"合并/整合某模块的 changelog"
-- 写完变更记录后发现同模块 active 文档已超阈值
+**使用（必须有用户的明确信号）：**
+- 用户明确要求写变更记录："写变更记录"、"生成 changelog"、"记录这次改动"、"补变更文档"、`/changelog`
+- 用户明确要求整合："合并/整合某模块的 changelog"
 
-**不用：**
+**不用（无信号 = 不写、不问）：**
+- 刚改完代码，用户没有要求留记录 → **直接收尾，不生成 changelog，也不要追问"要不要写变更记录"**。每次改动都自动生成变更文档会显著拖慢任务，这是本 skill 默认关闭自动触发的原因
+- 需要留痕但用户未提 → 在最终回复里最多用一句话提示"如需变更记录可以说『写变更记录』"，不要展开
 - 项目文档整体缺失或混乱，需要从零建体系 → 用 `bootstrap-project-docs`
 - 只是要写 git commit message → 直接写，不需要文档
 
@@ -153,15 +154,22 @@ grep -l "^module: <模块名>" docs/changelog/*.md | xargs grep -l "^status: act
 
 这一步在实践中最常被跳过，导致索引与文档实际状态长期不一致、下次整合无法判断范围。**逐个文件都要改。**
 
+改完 status 后，这些文件即进入"可删除"状态 —— 默认保留；用户要求清理时可直接删除（见"删除规则"一节）。
+
 ### B4. 回填索引
 
 若存在 `docs/changelog/README.md` 或 `docs/system/README.md`，同步更新其中的状态、版本、最近更新列。
 
-## 绝对禁止：删除或合并原始 changelog 文件
+## 删除规则：active 禁止，merged / archived 允许
 
-整合 = **内容进系统文档 + 原文件改 status**。原文件**永远保留**。
+按状态区分：
 
-**没有例外：**
+- **`status: active` 的文件禁止删除或合并成合集。** 整合 = 内容进系统文档 + 原文件改 status。此时事实尚未经过整合复核，删了就是丢失。
+- **`status: merged` / `archived` 的文件允许删除。** 其事实性内容已进系统文档（merged）或已明确废弃（archived），删除不影响"当前状态"的可查性。是否删除由用户或清理策略决定：
+  - 整合（B3）改完 status 后即可顺手删除，也可保留 —— 默认保留，用户说"清理/删掉已合并的"再删
+  - 定期清理时优先删 `merged`，其次 `archived`
+
+**对 active 文件没有例外：**
 - 不删除原文件
 - 不把 N 篇合并成一篇"变更合集"再删掉原文件
 - 不创建 `20260616-20260902_v1.0_xxx合集.md` 这种日期区间文件
@@ -169,20 +177,18 @@ grep -l "^module: <模块名>" docs/changelog/*.md | xargs grep -l "^status: act
 - 不用"索引表映射了原文件名所以找得到"作为删除理由
 - 不因为"文件太多很乱"就删除
 
-**为什么**：changelog 记录的是**决策过程和根因** —— 某次事故的 requestId、为什么放弃了 MySQL 方案、某个口径调整了三次的原因。系统文档只保留最终状态，这些过程信息一旦删除就永久丢失。git 历史里的删除文件在实践中不会有人去翻，等同于丢失。
+**为什么 active 不能删**：changelog 记录的是**决策过程和根因** —— 某次事故的 requestId、为什么放弃了 MySQL 方案、某个口径调整了三次的原因。系统文档只保留最终状态，这些过程信息一旦删除就永久丢失。git 历史里的删除文件在实践中不会有人去翻，等同于丢失。
 
-**违反的信号 —— 出现这些念头就停下：**
+**违反的信号 —— 出现这些念头就停下（针对 active 文件）：**
 
 | 念头 | 现实 |
 |---|---|
 | "git 历史保留了，删了也能找回" | 没人会去 git 历史翻已删文档。等同于丢失 |
 | "我做了索引表映射，不会找不到" | 索引指向的是已删除的文件，映射到空 |
 | "21 篇太多了，目录很乱" | 乱不是删除的理由。改 status 后可按状态过滤 |
-| "内容已经并进系统文档了，原文冗余" | 系统文档只留最终状态，丢了根因和决策过程 |
-| "合并成一篇合集更清晰" | 合集是新增，不是替代。原文仍要保留 |
-| "用户说'整合一下'就是让我清理" | 整合 ≠ 删除。不确定就问用户 |
-
-用户**明确要求**删除时，先说明会丢失什么，确认后再删。
+| "内容已经并进系统文档了，原文冗余" | 仅对 merged 成立；active 的还没经过整合复核 |
+| "合并成一篇合集更清晰" | 合集是新增，不是替代。active 原文仍要保留 |
+| "用户说'整合一下'就是让我清理" | 整合只改 status。删 merged 要用户明确说清理 |
 
 ## 常见错误
 
@@ -196,7 +202,7 @@ grep -l "^module: <模块名>" docs/changelog/*.md | xargs grep -l "^status: act
 | 改写章节名 | 无法按章节聚合和对比 | 用模板原章节名 |
 | §4 写"已测试通过" | 无凭据，无法复核 | 贴真实命令和结论 |
 | §3 空着或写"无影响" | 读者无法判断是否波及自己 | 逐项写明，含否定事实 |
-| 整合时删除原文件 | 根因和决策过程永久丢失 | 只改 status |
+| 整合时删除 active 原文件 | 根因和决策过程永久丢失 | active 只改 status；merged/archived 才可删 |
 | 整合时按文件名关键词圈定范围 | 误把其他模块的文档卷进来 | 按 `module` 字段 |
 | 整合后忘记改 status | 下次整合无法判断范围 | 逐个文件改 |
 | 在系统文档追加"历史变更"节 | 系统文档变成变更史，失去"当前状态"语义 | 融进对应章节 |

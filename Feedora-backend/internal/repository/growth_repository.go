@@ -18,6 +18,7 @@ func NewGrowthRepository(db *gorm.DB) *GrowthRepository {
 
 // AddPointLog 写入积分流水并累加用户积分。依赖唯一索引
 // uk_user_action_biz 防止重复发放；返回 true 表示本次实际发放。
+// 积分变化后同步重算等级：level = 1 + point_count / 100（每 100 分升 1 级，最低 1 级）。
 func (r *GrowthRepository) AddPointLog(userID int64, action string, point int, bizType string, bizID int64, remark string) bool {
 	log := &model.UserPointLog{
 		UserID: userID, Action: action, Point: point,
@@ -28,7 +29,10 @@ func (r *GrowthRepository) AddPointLog(userID int64, action string, point int, b
 		return false // 已发放过（唯一索引冲突）
 	}
 	r.db.Model(&model.User{}).Where("id = ?", userID).
-		UpdateColumn("point_count", gorm.Expr("point_count + ?", point))
+		UpdateColumns(map[string]any{
+			"point_count": gorm.Expr("point_count + ?", point),
+			"level":       gorm.Expr("GREATEST(1, FLOOR(point_count / 100) + 1)"),
+		})
 	return true
 }
 

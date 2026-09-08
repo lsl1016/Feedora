@@ -1,7 +1,7 @@
 ---
 title: 成长体系模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: growth
 maintainer: Feedora 项目组
@@ -14,12 +14,12 @@ related_code:
   - internal/repository/growth_repository.go
   - internal/model/growth.go
   - internal/worker/handlers.go
-summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态成长任务列表与领取占位接口，以及基于用户统计字段排序的成长排行榜。
+summary: 提供每日签到、基于 Kafka 事件的积分异步发放、成长任务列表与真实发放的任务领取接口、随积分重算的用户等级，以及基于用户统计字段排序的成长排行榜。
 ---
 
 ## 1. 模块概述
 
-成长体系模块提供每日签到、积分发放、成长任务与成长排行榜四类能力。签到在请求路径上同步发放固定积分；发帖、评论、点赞、收藏、建圈、加圈六类行为的积分由 Worker 消费 Kafka 事件后异步发放，依赖数据库唯一索引保证幂等。任务列表为服务层硬编码的静态任务加用户计数近似进度，任务领取接口为占位实现，不发放积分。模块不含等级成长逻辑，用户等级注册后固定为 1。
+成长体系模块提供每日签到、积分发放、成长任务与成长排行榜四类能力。签到在请求路径上同步发放固定积分；发帖、评论、点赞、收藏、建圈、加圈六类行为的积分由 Worker 消费 Kafka 事件后异步发放，依赖数据库唯一索引保证幂等。任务列表为服务层硬编码的静态任务加用户计数近似进度，任务 1、2 的领取接口在进度达标后经积分流水真实发放奖励。任何积分发放都会在同一条 UPDATE 中重算用户等级（每 100 积分升 1 级，最低 1 级）。
 
 ## 2. 接口清单
 
@@ -29,7 +29,7 @@ summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态�
 |------|------|------|--------|
 | `/growth/check-in` | POST | 每日签到，同日重复签到不重复发放积分 | `GrowthAPI.CheckIn` |
 | `/growth/tasks` | GET | 成长任务列表，支持 `type` 类型过滤 | `GrowthAPI.Tasks` |
-| `/growth/tasks/:taskId/claim` | POST | 领取任务奖励（占位实现，恒返回成功） | `GrowthAPI.ClaimTask` |
+| `/growth/tasks/:taskId/claim` | POST | 领取任务奖励（校验进度后真实发放积分） | `GrowthAPI.ClaimTask` |
 | `/growth/rankings` | GET | 成长排行榜（用户榜与圈子榜） | `GrowthAPI.Rankings` |
 
 共 4 个接口。前 3 个接口经 `authMW` 认证，用户 ID 取自 `middleware.CurrentUserID(c)`；`/growth/rankings` 为公开接口，未挂认证中间件，匿名访问时无法标记 `isCurrentUser`。
@@ -50,7 +50,7 @@ summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态�
 
 ### 3.2 积分获取途径与事件消费
 
-除签到外，积分由 Worker 消费 Kafka 事件后异步发放。消费逻辑位于 `internal/worker/handlers.go` 的 `Runner.handleGrowth`（worker 名 `growth`）。Worker 以消费组 `feedora-worker` 订阅 5 个 topic，实际名称由配置 `kafka.topicPrefix`（当前值 `feedora`）拼接：`feedora.user.events`、`feedora.post.events`、`feedora.comment.events`、`feedora.interaction.events`、`feedora.circle.events`。
+除签到外，积分由 Worker 消费 Kafka 事件后异步发放。消费逻辑位于 `internal/worker/handlers.go` 的 `Runner.handleGrowth`（worker 名 `growth`）。Worker 以消费组 `feedora-worker` 订阅 6 个 topic，实际名称由配置 `kafka.topicPrefix`（当前值 `feedora`）拼接：`feedora.user.events`、`feedora.post.events`、`feedora.comment.events`、`feedora.interaction.events`、`feedora.circle.events`、`feedora.topic.events`。
 
 各事件的积分发放规则：
 
@@ -65,7 +65,7 @@ summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态�
 
 幂等保障为两层：先用 `WorkerRepository.Claim(eventID, "growth")` 以 `uk_event_worker` 唯一索引拦截同一事件的重复消费，再由 `user_point_logs` 的 `uk_user_action_biz` 唯一索引兜底，同一 `(user_id, action, biz_type, biz_id)` 组合只发放一次。
 
-事件消费不区分操作者与受益者是否为同一用户：用户给自己的帖子点赞、收藏同样给作者（本人）加分。`PostUnliked`、`UserUnfollowed` 等逆向事件不触发积分回收，`PostUpdated`、`PostDeleted`、`PostHidden`、`UserRegistered`、`UserFollowed` 不触发积分发放。当前实现不存在任何积分扣减路径，所有发放值均为正数。
+事件消费不区分操作者与受益者是否为同一用户：用户给自己的帖子点赞、收藏同样给作者（本人）加分。`PostUnliked`、`PostUnfavorited`、`UserUnfollowed` 等逆向事件不触发积分回收，`PostUpdated`、`PostDeleted`、`PostHidden`、`PostUnhidden`、`UserRegistered`、`UserFollowed`、`TopicCreated`、`TopicUpdated` 不触发积分发放。当前实现不存在任何积分扣减路径，所有发放值均为正数。
 
 ### 3.3 成长任务
 
@@ -79,13 +79,21 @@ summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态�
 
 任务状态仅有 `done` / `todo` 两种，任务 1、2 依据计数是否达到目标值判定。`type` 参数为空或 `all` 时返回全部任务，否则按类型精确匹配过滤；接口无分页。
 
-`POST /growth/tasks/:taskId/claim` 为占位实现：仅校验路径参数 `taskId`（必填，最小 1），随后恒返回 `{"claimed": true}`，不校验任务完成状态，不写入任何数据，不发放积分。
+`POST /growth/tasks/:taskId/claim` 由 `GrowthService.ClaimTask` 实现真实发放：
+
+1. 校验路径参数 `taskId`（必填，最小 1）；未知任务 ID 返回参数错误（400）。
+2. 按任务 ID 取进度目标与奖励：任务 1 以 `users.post_count >= 1` 判定，奖励 10 分；任务 2 以 `users.comment_count >= 3` 判定，奖励 3 分。进度未达标返回 60001「任务进度未达标，暂不能领取」。
+3. 达标后调用 `AddPointLog(userID, "task_claim", points, "task", taskID, "任务奖励："+title)` 写入积分流水并累加积分；`uk_user_action_biz` 唯一索引冲突时返回 60002「任务奖励已领取过」，同一任务对同一用户只发放一次。
+4. 任务 3（每日签到）不走领取，返回 60003「该任务通过每日签到完成，无需领取」。
+5. 成功返回 `{"claimed": true}`，不含发放后的积分数。
 
 ### 3.4 等级
 
-用户表含 `level` 字段（`int`，默认 1），注册时写入 1。当前代码不存在任何更新 `level` 的写入路径，等级不随积分或行为增长，恒为注册值 1。等级名称映射（`dto.LevelNameOf`）为：`level >= 10` 资深专家、`>= 6` 活跃达人、`>= 3` 进阶用户、其余新手上路；该映射仅在排行榜与用户信息展示时使用。
+用户表含 `level` 字段（`int`，默认 1），注册时写入 1。`GrowthRepository.AddPointLog` 在累加 `point_count` 的同一条 `UpdateColumns` 中以 SQL 表达式重算 `level = GREATEST(1, FLOOR(point_count / 100) + 1)`：每 100 积分升 1 级，最低 1 级。签到、Worker 事件发放、任务领取均经该函数，均触发等级重算。等级仅在积分发放时重算，存量用户的 `level` 保持历史值，直到下一次积分变动才刷新，无独立的定时回填任务。
 
-经验值为近似：`experience` 直接取 `users.point_count`，`nextLevelExperience` 取 `level * 100`。不存在独立经验曲线公式，也不存在升级触发逻辑。
+等级名称映射（`dto.LevelNameOf`）为：`level >= 10` 资深专家、`>= 6` 活跃达人、`>= 3` 进阶用户、其余新手上路；该映射在排行榜与用户信息展示时使用。
+
+经验值为近似：`experience` 直接取 `users.point_count`，`nextLevelExperience` 取 `level * 100`。不存在独立经验曲线公式，也不存在升级触发通知。
 
 ### 3.5 排行榜
 
@@ -109,16 +117,16 @@ summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态�
 |------|------|------|
 | `id` | bigint | 主键 |
 | `user_id` | bigint | 所属用户 |
-| `action` | varchar(64) | 积分动作：`check_in`、`create_post`、`create_comment`、`post_liked`、`post_favorited`、`create_circle`、`join_circle` |
+| `action` | varchar(64) | 积分动作：`check_in`、`create_post`、`create_comment`、`post_liked`、`post_favorited`、`create_circle`、`join_circle`、`task_claim` |
 | `point` | int | 积分值，当前实现均为正数 |
-| `biz_type` | varchar(64) | 业务类型：`checkin`、`post`、`comment`、`circle` |
-| `biz_id` | bigint | 业务 ID；签到为日期键（`YYYYMMDD`），其余为帖子/评论/圈子 ID |
+| `biz_type` | varchar(64) | 业务类型：`checkin`、`post`、`comment`、`circle`、`task` |
+| `biz_id` | bigint | 业务 ID；签到为日期键（`YYYYMMDD`），任务领取为任务 ID，其余为帖子/评论/圈子 ID |
 | `remark` | varchar(255) | 备注 |
 | `created_at` | datetime | 创建时间 |
 
 索引：`uk_user_action_biz(user_id, action, biz_type, biz_id)` 唯一索引防重复发放；`idx_user_created(user_id, created_at)` 支撑签到次数统计。
 
-`users` 表关联字段：`point_count`（积分余额，默认 0，发放时原子累加）、`post_count`、`comment_count`、`like_count`（任务进度与排行依据）、`level`（默认 1）。
+`users` 表关联字段：`point_count`（积分余额，默认 0，发放时原子累加）、`post_count`、`comment_count`、`like_count`（任务进度与排行依据）、`level`（默认 1，积分发放时同语句重算）。
 
 不存在独立的签到记录表（签到以 `action = "check_in"` 的积分流水表达）、任务表（任务硬编码于服务层）和勋章表（无勋章功能）。
 
@@ -129,6 +137,8 @@ summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态�
 | 数值 | 值 | 定义位置 |
 |------|-----|----------|
 | 每日签到积分 | 5 | `internal/service/growth_service.go` 常量 `checkInPoints` |
+| 任务 1 奖励（发布首篇帖子） | 10 | `internal/service/growth_service.go` `ClaimTask` |
+| 任务 2 奖励（参与评论） | 3 | 同上 |
 | 发帖奖励 | 10 | `internal/worker/handlers.go` `handleGrowth` |
 | 评论奖励 | 3 | 同上 |
 | 被点赞奖励 | 2 | 同上 |
@@ -141,11 +151,12 @@ summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态�
 当前实现的局限：
 
 - `internal/worker/growth/` 目录仅含 `doc.go` 占位文件，积分发放逻辑实际位于 `internal/worker/handlers.go`。
-- 任务领取接口为占位实现，不校验完成状态、不发放积分。
+- 任务 3（每日签到）不能通过领取接口发放，仅签到路径计分；任务进度取 `users` 冗余计数，判定与列表展示口径一致。
 - 无补签、无连签递增奖励，签到固定 5 分。
 - 连续签到天数为最近 7 天签到次数近似，非严格连续判定。
 - 无积分扣减与逆向事件回收；自交互（如给本人帖子点赞）同样发放积分。
-- 用户等级注册后恒为 1，无升级路径；经验值用积分近似。
+- 等级仅在积分发放时重算，无定时回填；`AddPointLog` 中积分累加与等级重算的 UPDATE 执行错误被忽略。
+- 经验值用积分近似，`nextLevelExperience` 取 `level * 100` 与等级公式的百进位一致。
 - 排行榜 `range` 参数不生效。
 - `GrowthRepository.HasPointLog` 当前无任何调用方。
 
@@ -153,4 +164,5 @@ summary: 提供每日签到、基于 Kafka 事件的积分异步发放、静态�
 
 | 版本 | 日期 | 作者 | 说明 |
 |------|------|------|------|
+| v1.1 | 2026-09-09 | Feedora 项目组 | 任务领取真实发放积分与等级重算 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

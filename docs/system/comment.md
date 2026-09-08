@@ -1,7 +1,7 @@
 ---
 title: 评论模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: comment
 maintainer: Feedora 项目组
@@ -18,7 +18,7 @@ summary: 评论模块提供帖子评论的发表、楼中楼回复、软删除�
 
 ## 1. 模块概述
 
-评论模块为帖子提供两级评论（根评论 + 楼中楼回复）的发表、回复、软删除、点赞与列表查询能力。评论创建与删除在数据库事务或同步语句中维护 `posts.comment_count` 与 `users.comment_count` 计数，并在创建成功后发布 `CommentCreated` 事件，由 worker 异步生成站内通知、发放积分并累加帖子热度榜单。除本模块路由外，`CommentService` 的"我的评论"查询复用为用户端接口，`CommentRepository` 的全量分页查询复用为后台管理接口。
+评论模块为帖子提供两级评论（根评论 + 楼中楼回复）的发表、回复、软删除、点赞与列表查询能力。评论创建与删除在数据库事务中同步维护 `posts.comment_count` 与 `users.comment_count` 计数，并在创建成功后发布 `CommentCreated` 事件，由 worker 异步生成站内通知、发放积分并累加帖子热度榜单。除本模块路由外，`CommentService` 的"我的评论"查询复用为用户端接口，`CommentRepository` 的全量分页查询复用为后台管理接口。
 
 ## 2. 接口清单
 
@@ -50,8 +50,7 @@ summary: 评论模块提供帖子评论的发表、楼中楼回复、软删除�
 ### 3.2 评论计数维护（同步）
 
 - 创建评论通过 `CreateWithCounters` 在单个数据库事务内完成三步：插入 `comments` 记录、`posts.comment_count + 1`、`users.comment_count + 1`。计数为同步维护，不存在异步补偿。
-- 删除评论通过 `SoftDelete` 执行三条独立语句（不在同一事务内）：置 `status = deleted`、GORM 软删写 `deleted_at`、`posts.comment_count` 减 1（`GREATEST(comment_count - 1, 0)`，下限 0）。
-- 删除评论时不递减 `users.comment_count`，用户累计评论数只增不减。
+- 删除评论通过 `DeleteWithCounters` 在单个数据库事务内执行四步：置 `status = deleted`、GORM 软删写 `deleted_at`、`posts.comment_count` 减 1、`users.comment_count` 减 1（两项回减均以 `GREATEST(col - 1, 0)` 为下限 0），与创建时 `CreateWithCounters` 的 +1/+1 对称。
 - 删除根评论不级联删除其子回复：子回复记录保留在库中，但因根评论从列表查询结果中消失而在前端不可见；`comment_count` 仅减 1，与实际可见评论数出现偏差。
 - 帖子被删除时不存在对本模块评论数的级联处理逻辑。
 
@@ -115,13 +114,13 @@ summary: 评论模块提供帖子评论的发表、楼中楼回复、软删除�
 
 - 帖子评论列表一次性返回全部评论，无分页参数，评论量大时响应体积随之增长。
 - 评论内容仅在应用层校验非空，长度上限依赖数据库列约束（`size:2000`）。
-- 删除评论的三条 SQL 不在同一事务内，中途失败会产生状态与计数不一致。
 - 删除根评论后其子回复在库中保留但前端不可见，`comment_count` 仅减 1。
-- 删除评论不递减 `users.comment_count`，不发送评论删除事件，下游通知与热度榜单不回退。
+- 删除评论不发送评论删除事件，下游通知与热度榜单不回退。
 - 不支持评论编辑。
 
 ## 6. 历史版本
 
 | 版本 | 日期 | 维护者 | 说明 |
 |---|---|---|---|
+| v1.1 | 2026-09-09 | Feedora 项目组 | 修正删除路径描述：软删除事务化并补齐 `users.comment_count` 回减 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

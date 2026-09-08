@@ -1,7 +1,7 @@
 ---
 title: 帖子模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.1
 type: system
 module: post
 maintainer: Feedora 项目组
@@ -55,10 +55,10 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 
 - 插入 `posts` 主记录；`summary` 取正文前 120 个字符（超出追加 `...`），`images` 非空时首图写入 `cover_url`。
 - 逐条插入 `post_images`（`sort_order` 为图片下标）。
-- 逐条插入 `post_tags` 并对每个标签执行 `use_count + 1`；逐条插入 `post_topics` 并对每个话题执行 `post_count + 1`。
-- 对作者执行 `users.post_count + 1`；帖子归属圈子时对 `circles.post_count + 1`。
+- 逐条插入 `post_tags` 并对每个标签执行 `use_count + 1`；逐条插入 `post_topics` 并对每个话题执行 `post_count + 1`；这两项不区分帖子状态，`draft`/`scheduled` 帖同样递增。
+- 帖子状态为 `published` 时对作者执行 `users.post_count + 1`，帖子归属圈子时对 `circles.post_count + 1`；`draft`/`scheduled` 帖不递增这两项计数。
 
-事务提交后，`Create` 对 `published` 状态再次调用 `users.IncColumn(authorID, "post_count", 1)`，即一次成功发布中作者 `post_count` 被递增两次；`draft`/`scheduled` 帖子仅事务内递增一次。
+事务提交后 `Create` 不再对作者 `post_count` 做额外递增，一次成功发布中作者计数仅在事务内递增一次。
 
 `Repost` 转发生成新帖：`post_type = repost`，标题为 `转发：` + 源帖标题，正文与 `repost_comment` 为转发附言，`source_post_id` 指向源帖，可见性固定 `public`、状态固定 `published`；随后源帖 `repost_count + 1`、转发者 `users.post_count + 1`。转发走 `PostRepository.Create` 单条插入，不建立标签/话题关系。
 
@@ -103,7 +103,7 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 | `Create`（任意状态） | `PostCreated` | `{"title": 帖子标题}` |
 | `Update` | `PostUpdated` | `nil` |
 | `SetHidden(true)` | `PostHidden` | `nil` |
-| `SetHidden(false)` | `PostUnhidden`（字面量字符串，`event_type.go` 中无常量定义） | `nil` |
+| `SetHidden(false)` | `PostUnhidden`（常量 `event.PostUnhidden`） | `nil` |
 | `Delete` | `PostDeleted` | `nil` |
 
 `Share` 与 `Repost` 不发送任何事件。
@@ -137,7 +137,7 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 
 软删与隐藏语义：
 
-- 删除（`SoftDelete`）：先将 `status` 更新为 `deleted`，再执行 GORM 软删除写入 `deleted_at`，两条语句不在同一事务；软删后的帖子对所有查询不可见，列表中作者自己的帖子也通过 `status <> deleted` 排除。
+- 删除（`SoftDeleteWithCounters`）：在单个数据库事务内置 `status = deleted`、执行 GORM 软删除写入 `deleted_at`；帖子原状态为 `published` 时对称回减作者 `users.post_count`、归属圈子 `circles.post_count`、关联话题 `topics.post_count` 与标签 `tags.use_count`（均以 `GREATEST(col - 1, 0)` 为下限 0），原状态非 `published` 时不回减计数；软删后的帖子对所有查询不可见，列表中作者自己的帖子也通过 `status <> deleted` 排除。
 - 隐藏（`SetHidden`）：`status` 在 `hidden` 与 `published` 之间切换，不删数据；隐藏帖不出现在默认列表，仅作者本人可通过详情接口访问。
 
 ## 5. 配置项与限制
@@ -153,7 +153,6 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 当前实现的局限：
 
 - `CreatePostRequest.scheduledAt` 参数被接受但未映射到 `posts.scheduled_at`，预约时间不持久化；`scheduled` 状态帖子无定时发布任务，不会自动转为 `published`。
-- 已发布帖创建时 `users.post_count` 在事务内与 Service 层各递增一次（共 +2），而 `Delete` 仅递减 1；草稿/预约帖也在事务内递增作者 `post_count`。
 - `posts.hot_score` 列在全部代码中无写入点，`hot` 排序实际按默认值 0 排序后退化为 `created_at DESC`。
 - `Repost` 不校验源帖状态与可见性，源帖为 `hidden` 或 `draft` 时仍可转发。
 - `Share` 仅递增计数，不记录分享者；`Update` 不能修改标签、话题与圈子归属。
@@ -163,4 +162,5 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 
 | 版本 | 日期 | 维护者 | 说明 |
 |---|---|---|---|
+| v1.1 | 2026-09-09 | Feedora 项目组 | 修正计数维护描述：发布计数仅统计已发布帖，删帖改为事务内对称回减，`PostUnhidden` 改用事件常量 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

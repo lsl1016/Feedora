@@ -12,20 +12,20 @@ Feedora 是开发者知识社区 V2.1 的 monorepo，包含 Go 后端（`Feedora
 |------|------|------|----------|------|
 | [auth.md](system/auth.md) | auth | v1.0 | 2026-09-09 | 注册、登录、JWT 鉴权 |
 | [user.md](system/user.md) | user | v1.0 | 2026-09-09 | 用户资料与个人主页 |
-| [post.md](system/post.md) | post | v1.0 | 2026-09-09 | 帖子发布、浏览、详情 |
-| [comment.md](system/comment.md) | comment | v1.0 | 2026-09-09 | 评论与回复 |
+| [post.md](system/post.md) | post | v1.1 | 2026-09-09 | 帖子发布、浏览、详情 |
+| [comment.md](system/comment.md) | comment | v1.1 | 2026-09-09 | 评论与回复 |
 | [circle.md](system/circle.md) | circle | v1.0 | 2026-09-09 | 圈子、成员、公告 |
-| [topic.md](system/topic.md) | topic | v1.0 | 2026-09-09 | 话题 |
+| [topic.md](system/topic.md) | topic | v1.1 | 2026-09-09 | 话题 |
 | [tag.md](system/tag.md) | tag | v1.0 | 2026-09-09 | 标签 |
 | [follow.md](system/follow.md) | follow | v1.0 | 2026-09-09 | 用户关注与关注流聚合 |
-| [interaction.md](system/interaction.md) | interaction | v1.0 | 2026-09-09 | 点赞与收藏 |
-| [notification.md](system/notification.md) | notification | v1.0 | 2026-09-09 | 站内通知 |
-| [file.md](system/file.md) | file | v1.0 | 2026-09-09 | 文件上传与存储 |
-| [search.md](system/search.md) | search | v1.0 | 2026-09-09 | Elasticsearch 全文搜索 |
-| [rank.md](system/rank.md) | rank | v1.0 | 2026-09-09 | 热门榜单 |
-| [growth.md](system/growth.md) | growth | v1.0 | 2026-09-09 | 签到、积分、任务、等级 |
-| [admin.md](system/admin.md) | admin | v1.0 | 2026-09-09 | 后台管理 |
-| [infrastructure.md](system/infrastructure.md) | infrastructure | v1.0 | 2026-09-09 | worker/cache/event/pkg 横切基础设施 |
+| [interaction.md](system/interaction.md) | interaction | v1.1 | 2026-09-09 | 点赞与收藏 |
+| [notification.md](system/notification.md) | notification | v1.1 | 2026-09-09 | 站内通知 |
+| [file.md](system/file.md) | file | v1.1 | 2026-09-09 | 文件上传与存储 |
+| [search.md](system/search.md) | search | v1.1 | 2026-09-09 | Elasticsearch 全文搜索 |
+| [rank.md](system/rank.md) | rank | v1.1 | 2026-09-09 | 热门榜单 |
+| [growth.md](system/growth.md) | growth | v1.1 | 2026-09-09 | 签到、积分、任务、等级 |
+| [admin.md](system/admin.md) | admin | v1.1 | 2026-09-09 | 后台管理 |
+| [infrastructure.md](system/infrastructure.md) | infrastructure | v1.1 | 2026-09-09 | worker/cache/event/pkg 横切基础设施 |
 
 ## 历史设计文档（只读快照）
 
@@ -55,7 +55,21 @@ Feedora 是开发者知识社区 V2.1 的 monorepo，包含 Go 后端（`Feedora
 
 ## 变更记录（docs/changelog/）
 
-记录每次代码变更，积累 5 篇后按 CONVENTION §6 整合进系统文档。当前为空。
+**按需生成**：仅当用户明确要求时才写变更记录（信号词见 [CONVENTION.md](CONVENTION.md) §7），日常代码变更不自动生成。同模块积累 5 篇 active 后按 CONVENTION §6 整合进系统文档；`merged`/`archived` 状态的文件允许删除。现有 11 篇（均 active）：
+
+| 文档 | 模块 | 日期 |
+|------|------|------|
+| [20260909_v1.0_修复帖子计数双重递增与删帖不对称回减.md](changelog/20260909_v1.0_修复帖子计数双重递增与删帖不对称回减.md) | post | 2026-09-09 |
+| [20260909_v1.0_评论删除事务化并补齐用户评论数回减.md](changelog/20260909_v1.0_评论删除事务化并补齐用户评论数回减.md) | comment | 2026-09-09 |
+| [20260909_v1.0_取消收藏补发PostUnfavorited事件.md](changelog/20260909_v1.0_取消收藏补发PostUnfavorited事件.md) | interaction | 2026-09-09 |
+| [20260909_v1.0_任务领取真实发放积分与等级重算.md](changelog/20260909_v1.0_任务领取真实发放积分与等级重算.md) | growth | 2026-09-09 |
+| [20260909_v1.0_新增用户封禁与帖子上下架接口.md](changelog/20260909_v1.0_新增用户封禁与帖子上下架接口.md) | admin | 2026-09-09 |
+| [20260909_v1.0_worker开关生效与事件链路补齐.md](changelog/20260909_v1.0_worker开关生效与事件链路补齐.md) | infrastructure | 2026-09-09 |
+| [20260909_v1.0_oss_type配置生效.md](changelog/20260909_v1.0_oss_type配置生效.md) | file | 2026-09-09 |
+| [20260909_v1.0_未读数改为Redis缓存旁路.md](changelog/20260909_v1.0_未读数改为Redis缓存旁路.md) | notification | 2026-09-09 |
+| [20260909_v1.0_取消互动热度减分与hot_score定时回写.md](changelog/20260909_v1.0_取消互动热度减分与hot_score定时回写.md) | rank | 2026-09-09 |
+| [20260909_v1.0_话题参与人数落库重算.md](changelog/20260909_v1.0_话题参与人数落库重算.md) | topic | 2026-09-09 |
+| [20260909_v1.0_话题索引增量同步.md](changelog/20260909_v1.0_话题索引增量同步.md) | search | 2026-09-09 |
 
 ## 资产
 
