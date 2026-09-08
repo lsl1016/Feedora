@@ -192,7 +192,7 @@ func (s *RankService) Rankings(rankType, timeRange string, page, size int, curre
 		}
 		items = append(items, dto.RankingItem{
 			Rank: off + i + 1, TargetID: us[i].ID, TargetType: "user", Name: us[i].Nickname,
-			Avatar: us[i].Avatar, Level: us[i].Level, Points: us[i].PointCount,
+			Avatar: us[i].Avatar, Level: us[i].Level, LevelName: dto.LevelNameOf(us[i].Level), Points: us[i].PointCount,
 			PostCount: us[i].PostCount, LikeReceivedCount: us[i].LikeCount, Score: float64(score),
 			IsCurrentUser: us[i].ID == currentUserID,
 		})

@@ -247,6 +247,9 @@ func (s *PostService) Create(authorID int64, in dto.CreatePostRequest) (*dto.Pos
 	if err := s.posts.CreateWithRelations(p, in.Images, dedup(in.TagIDs), dedup(in.TopicIDs)); err != nil {
 		return nil, errs.ErrInternal
 	}
+	if status == model.PostPublished {
+		s.users.IncColumn(authorID, "post_count", 1)
+	}
 	s.producer.Publish(event.TopicPost, event.PostCreated, p.ID, authorID, map[string]any{"title": p.Title})
 	return s.Get(p.ID, authorID)
 }

@@ -81,6 +81,11 @@ func levelName(level int) string {
 	}
 }
 
+// LevelNameOf 供其它模块（如排行榜）组装 DTO 时复用等级名称。
+func LevelNameOf(level int) string {
+	return levelName(level)
+}
+
 // ToUserSummary 将用户模型转换为简要信息。
 func ToUserSummary(u *model.User) UserSummary {
 	if u == nil {

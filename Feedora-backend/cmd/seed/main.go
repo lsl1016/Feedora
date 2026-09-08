@@ -43,12 +43,12 @@ func main() {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
 	pwd := string(hash)
 
-	// 用户。
+	// 用户。计数列与下方帖子 / 评论种子的聚合值保持一致。
 	users := []model.User{
 		{Account: "admin", PasswordHash: pwd, Nickname: "平台管理员", Role: "admin", Status: "normal", Level: 10, Bio: "社区管理员", CreatedAt: now, UpdatedAt: now},
-		{Account: "zhangsan", PasswordHash: pwd, Nickname: "张三", Role: "user", Status: "normal", Level: 5, Bio: "后端开发，喜欢 Go 和云原生", CreatedAt: now, UpdatedAt: now},
-		{Account: "lisi", PasswordHash: pwd, Nickname: "李四", Role: "user", Status: "normal", Level: 3, Bio: "前端工程师，React 爱好者", CreatedAt: now, UpdatedAt: now},
-		{Account: "wangwu", PasswordHash: pwd, Nickname: "王五", Role: "user", Status: "normal", Level: 2, Bio: "全栈开发者", CreatedAt: now, UpdatedAt: now},
+		{Account: "zhangsan", PasswordHash: pwd, Nickname: "张三", Role: "user", Status: "normal", Level: 5, Bio: "后端开发，喜欢 Go 和云原生", PostCount: 2, LikeCount: 17, CommentCount: 1, CreatedAt: now, UpdatedAt: now},
+		{Account: "lisi", PasswordHash: pwd, Nickname: "李四", Role: "user", Status: "normal", Level: 3, Bio: "前端工程师，React 爱好者", PostCount: 1, LikeCount: 8, CommentCount: 1, CreatedAt: now, UpdatedAt: now},
+		{Account: "wangwu", PasswordHash: pwd, Nickname: "王五", Role: "user", Status: "normal", Level: 2, Bio: "全栈开发者", CommentCount: 1, CreatedAt: now, UpdatedAt: now},
 	}
 	mustCreate(db, &users)
 

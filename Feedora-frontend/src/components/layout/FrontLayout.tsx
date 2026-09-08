@@ -1,6 +1,7 @@
 import { BellOutlined, BookOutlined, DashboardOutlined, EditOutlined, FireOutlined, HomeOutlined, LogoutOutlined, NotificationOutlined, StarOutlined, TagsOutlined, TeamOutlined, TrophyOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Badge, Button, Dropdown, Input, Layout, Space } from 'antd';
 import type { MenuProps } from 'antd';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuthStore } from '../../store/authStore';
@@ -21,6 +22,15 @@ const navItems = [
 export function FrontLayout() {
   const navigate = useNavigate();
   const { isLogin, currentUser, logout } = useAuthStore();
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!isLogin) { setUnread(0); return; }
+    let cancelled = false;
+    api.getUnreadCount()
+      .then((r: { count?: number } | undefined) => { if (!cancelled) setUnread(r?.count ?? 0); })
+      .catch(() => { /* 未登录过期等情况不打扰用户 */ });
+    return () => { cancelled = true; };
+  }, [isLogin]);
   const menu: MenuProps['items'] = isLogin ? [
     { key: 'me', label: '我的主页', icon: <UserOutlined /> },
     { key: 'following', label: '我的关注', icon: <StarOutlined /> },
@@ -60,7 +70,7 @@ export function FrontLayout() {
           </nav>
           <Input.Search className="global-search" placeholder="搜索帖子、用户、话题、圈子" onSearch={(v) => v && navigate(`/search?keyword=${encodeURIComponent(v)}`)} onFocus={() => api.getHotKeywords()} />
           <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(isLogin ? '/posts/create' : '/login')}>发布</Button>
-          <Badge count={2}><Button shape="circle" icon={<BellOutlined />} onClick={() => navigate('/notifications')} /></Badge>
+          <Badge count={unread}><Button shape="circle" icon={<BellOutlined />} onClick={() => navigate('/notifications')} /></Badge>
           <Dropdown menu={{ items: menu, onClick: onMenu }}><Avatar src={currentUser?.avatar} icon={<UserOutlined />} className="clickable" /></Dropdown>
         </div>
       </Header>

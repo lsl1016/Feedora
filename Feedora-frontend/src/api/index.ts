@@ -2,9 +2,10 @@ import { httpDelete, httpGet, httpPost, httpPut } from './request';
 
 // 统一真实接口调用层：方法名 → REST 端点映射。
 // 所有数据均来自后端真实接口，不再使用任何本地 mock 假数据。
-function realEndpoint(methodName: string, args: any[]): { method: 'get' | 'post' | 'put' | 'delete'; url: string; params?: any; data?: any } {
+// transform：后端返回结构与前端页面期望不一致时的适配（如评论树数组 → PageResult）。
+function realEndpoint(methodName: string, args: any[]): { method: 'get' | 'post' | 'put' | 'delete'; url: string; params?: any; data?: any; transform?: (res: any) => any } {
   const [a, b, c] = args;
-  const maps: Record<string, () => { method: 'get' | 'post' | 'put' | 'delete'; url: string; params?: any; data?: any }> = {
+  const maps: Record<string, () => { method: 'get' | 'post' | 'put' | 'delete'; url: string; params?: any; data?: any; transform?: (res: any) => any }> = {
     login: () => ({ method: 'post', url: '/auth/login', data: { account: a, password: b } }),
     register: () => ({ method: 'post', url: '/auth/register', data: a }),
     getUsers: () => ({ method: 'get', url: '/users', params: a }),
@@ -30,7 +31,11 @@ function realEndpoint(methodName: string, args: any[]): { method: 'get' | 'post'
     favoritePost: () => ({ method: 'post', url: `/posts/${a}/favorite` }),
     sharePost: () => ({ method: 'post', url: `/posts/${a}/share`, data: { channel: 'copy_link' } }),
     repostPost: () => ({ method: 'post', url: `/posts/${a}/repost`, data: { repostComment: b } }),
-    getComments: () => ({ method: 'get', url: `/posts/${a}/comments` }),
+    getComments: () => ({
+      method: 'get', url: `/posts/${a}/comments`,
+      // 后端返回根评论树数组，页面按 PageResult 消费，这里包装对齐。
+      transform: (r: any) => (Array.isArray(r) ? { list: r, total: r.length, page: 1, pageSize: r.length } : r),
+    }),
     addComment: () => ({ method: 'post', url: '/comments', data: { postId: a, content: b } }),
     getMyComments: () => ({ method: 'get', url: '/users/me/comments', params: a }),
     deleteComment: () => ({ method: 'delete', url: `/comments/${a}` }),
@@ -73,12 +78,21 @@ function realEndpoint(methodName: string, args: any[]): { method: 'get' | 'post'
 type ApiMethod = (...args: any[]) => Promise<any>;
 
 // api 为真实接口代理：任意方法名按 realEndpoint 映射发起真实 HTTP 请求。
+// 未映射到后端接口的方法（关注、AI 工作台、活动、公告等占位能力）本地静默失败：
+// 不发请求、不弹错误提示，页面保持空态，避免每次加载出现「资源不存在」弹窗。
 export const api = new Proxy({} as Record<string, ApiMethod>, {
   get(_target, prop) {
     const methodName = String(prop);
     return async (...args: any[]) => {
       const endpoint = realEndpoint(methodName, args);
-      if (endpoint.method === 'get') return httpGet(endpoint.url, endpoint.params);
+      if (endpoint.url.startsWith('/__unimplemented__')) {
+        console.warn(`[api] 方法未映射到后端接口: ${methodName}`);
+        return Promise.reject(new Error(`api.${methodName} 未实现`));
+      }
+      if (endpoint.method === 'get') {
+        const data = await httpGet(endpoint.url, endpoint.params);
+        return endpoint.transform ? endpoint.transform(data) : data;
+      }
       if (endpoint.method === 'post') return httpPost(endpoint.url, endpoint.data);
       if (endpoint.method === 'put') return httpPut(endpoint.url, endpoint.data);
       return httpDelete(endpoint.url, endpoint.params);
