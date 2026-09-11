@@ -1,7 +1,7 @@
 ---
 title: 基础设施模块功能文档
 date: 2026-09-09
-version: v1.1
+version: v1.2
 type: system
 module: infrastructure
 maintainer: Feedora 项目组
@@ -14,9 +14,10 @@ related_code:
   - internal/event/outbox.go
   - internal/cache/cache.go
   - internal/cache/keys.go
+  - internal/service/auth_guard.go
   - internal/repository/outbox_repository.go
   - pkg/kafkax/producer.go
-summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件可靠投递链路、Worker 消费体系（含热度回写与统计处理器）、Redis 缓存键与可插拔组件的降级实现。
+summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件可靠投递链路、Worker 消费体系（含热度回写、定时帖转正与统计处理器）、Redis 缓存键（含鉴权吊销与写操作幂等键）与可插拔组件的降级实现。
 ---
 
 ## 1. 模块概述
@@ -27,12 +28,13 @@ summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件�
 
 | 组件 | 位置 | 职责 |
 | --- | --- | --- |
-| `App` 应用容器 | `internal/app/app.go` | 加载配置、连接 MySQL/Redis/ES、初始化本地存储与 JWT，按 `kafka.enabled` 选择事件生产者实现并装配全部服务与路由 |
+| `App` 应用容器 | `internal/app/app.go` | 加载配置、连接 MySQL/Redis/ES、初始化本地存储与 JWT，按 `kafka.enabled` 选择事件生产者实现，装配 `AuthGuard` 并经 `router.Options.Checker` 注入鉴权中间件，装配全部服务与路由 |
 | API 进程入口 | `cmd/api/main.go` | 构建 `App` 并监听 `server.port`；进程启动时执行 `AutoMigrate`（含基础设施表建表） |
 | Worker 进程入口 | `cmd/worker/main.go` | 构建 `Runner`，在 `:9091` 暴露 `/metrics`；`worker.enabled=false` 或 `kafka.enabled=false` 时直接退出 |
-| `Runner` | `internal/worker/runner.go` | Worker 运行器：预创建 Topic、ES 索引全量重建、启动 Outbox Dispatcher、`hotScoreLoop` 热度回写定时器与 Kafka 消费循环 |
+| `Runner` | `internal/worker/runner.go` | Worker 运行器：预创建 Topic、ES 索引全量重建、启动 Outbox Dispatcher、`hotScoreLoop` 热度回写定时器、`scheduleLoop` 定时帖转正定时器与 Kafka 消费循环 |
 | Outbox Dispatcher | `internal/worker/runner.go`（`dispatchLoop`/`dispatchOnce`） | 定时捞取 `event_outbox` 中 `pending` 事件发布到 Kafka，失败按退避序列重试 |
 | 热度回写定时器 | `internal/worker/runner.go`（`hotScoreLoop`/`flushHotScore`） | 每 5 分钟把 `rank:post:all` ZSet Top 200 写回 `posts.hot_score`（counter 职责，Redis 未启用时跳过） |
+| 定时帖转正定时器 | `internal/worker/runner.go`（`scheduleLoop`/`publishDue`） | 每 30 秒扫描到点定时帖（每轮最多 50 条），事务内转正并补齐发布计数，经 kafkax 发布 `PostCreated` 事件 |
 | 事件分发 | `internal/worker/handlers.go` | 将单条 `event.Message` 串行分发给 search、notification、growth、rank、stat 五个处理器，各自独立幂等 |
 | ES 索引操作 | `internal/worker/index.go` | 构造帖子/用户/圈子/话题索引文档并写入，按 ID 重建或删除，启动时全量重建 |
 | search 消费者 | `internal/worker/search/`（占位包，逻辑在 `handlers.go`/`index.go`） | 消费 `feedora.post.events`、`feedora.user.events`、`feedora.circle.events`、`feedora.topic.events` 同步 ES 索引 |
@@ -41,8 +43,8 @@ summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件�
 | rank 消费者 | `internal/worker/rank/`（占位包，逻辑在 `handlers.go`） | 消费内容与圈子事件累加热榜 ZSet 分数 |
 | stat 消费者 | `internal/worker/stat/`（占位包，逻辑在 `handlers.go` 的 `handleStat`） | 消费帖子创建/删除事件，按帖重算所属话题参与人数 |
 | consumer/dispatcher 包 | `internal/worker/{consumer,dispatcher}/` | 仅含 `doc.go` 占位注释，无任何实现 |
-| `cache.Cache` | `internal/cache/cache.go` | Redis 轻封装：JSON 读写、整型计数（含区分未命中的 `GetIntOK`）、ZSet 榜单，底层 client 为 `nil` 时全部方法安全降级 |
-| 缓存键生成 | `internal/cache/keys.go` | 统一生成详情缓存、未读计数、榜单、热门搜索词的 Redis Key |
+| `cache.Cache` | `internal/cache/cache.go` | Redis 轻封装：JSON 读写、整型计数（含区分未命中的 `GetIntOK`）、`SetNX` 幂等占用、ZSet 榜单，底层 client 为 `nil` 时全部方法安全降级（`SetNX` 恒返回 true，不拦截写操作） |
+| 缓存键生成 | `internal/cache/keys.go` | 统一生成详情缓存、未读计数、榜单、热门搜索词、用户状态、登出黑名单、用户级吊销与写操作幂等的 Redis Key |
 | `event.Producer`/`NoopProducer` | `internal/event/producer.go` | 事件发布接口与日志实现（Kafka 未启用时使用，仅打印事件 JSON） |
 | `OutboxProducer`/`event.Message` | `internal/event/outbox.go` | 事件写入 `event_outbox` 表的可靠投递实现；`Message` 为 Kafka 线格式（Worker 反序列化目标） |
 | 事件类型与 Topic 常量 | `internal/event/event_type.go`、`internal/event/topic.go` | 17 个事件类型常量与 6 个 Topic 常量（不含前缀） |
@@ -51,7 +53,7 @@ summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件�
 | `kafkax` | `pkg/kafkax/` | 基于 segmentio/kafka-go 的生产者、消费组消费者与 Topic 预创建 |
 | `redisx`/`esx`/`ossx` | `pkg/{redisx,esx,ossx}/` | Redis/ES 客户端初始化（含连通性校验）；文件存储抽象与本地磁盘实现（MinIO/阿里云为占位） |
 | `observability` | `pkg/observability/` | Prometheus 指标定义、Gin 指标中间件、`/metrics` 处理器 |
-| `middleware` | `pkg/middleware/` | Trace（traceId 传播）、Logger、Recover、CORS、Auth/Admin、上下文键；`RateLimit` 为直接放行的占位实现 |
+| `middleware` | `pkg/middleware/` | Trace（traceId 传播）、Logger、Recover、CORS、Auth/Admin（`Auth`/`OptionalAuth` 支持注入 `AuthChecker` 补充校验）、上下文键；`RateLimit` 为直接放行的占位实现 |
 | `config` | `pkg/config/config.go` | 全量 YAML 配置结构定义与 `Load` 加载 |
 
 ## 3. 核心逻辑
@@ -75,6 +77,8 @@ summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件�
 | `TopicCircle` | `feedora.circle.events` | `CircleCreated`、`CircleJoined` |
 | `TopicTopic` | `feedora.topic.events` | `TopicCreated`、`TopicUpdated`（由 admin 模块话题创建/更新发布） |
 
+其中 `PostCreated` 除业务发帖经 Outbox 发布外，Worker 定时帖转正（`scheduleLoop`）后也直接经 `kafkax.Producer` 发布到同一 Topic，不经过 outbox 表。
+
 事件类型枚举定义于 `internal/event/event_type.go`，共 17 个常量（含 `PostUnhidden`、`PostUnfavorited`、`TopicCreated`、`TopicUpdated`），发布处与消费处均引用常量。事件 Payload 阶段一使用通用 `map[string]any`（如发帖事件 `{"title": ...}`、评论事件 `{"postId": ..., "postAuthorId": ...}`），`internal/event/payload.go` 中的结构化 Payload 定义为占位注释。
 
 消费侧幂等由 `WorkerRepository.Claim` 实现：向 `worker_event_records` 插入 `(event_id, worker_name, status="success")`，依赖 `uk_event_worker` 唯一索引，插入成功即首次消费，重复插入返回 false 拦截。
@@ -83,7 +87,7 @@ summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件�
 
 `cmd/worker/main.go` 启动流程：加载配置 → `worker.enabled=false` 时记录告警并退出 → `kafka.enabled=false` 时记录告警并退出 → 连接 MySQL（不执行 `AutoMigrate`，建表由 API 进程完成）→ 按开关连接 Redis（失败仅记错误并以降级模式运行）与 ES → `worker.New` 构造 `Runner`（内部创建 kafkax 生产者/消费者，订阅带前缀的 6 个 Topic）→ 在 `:9091` 起独立 HTTP 服务暴露 `/metrics` → 监听 SIGINT/SIGTERM 后进入 `Run`。
 
-`Run` 依次执行：`kafkax.EnsureTopics` 预创建 6 个 Topic（单分区单副本，失败仅告警）；ES 启用时 `EnsureIndices` 建索引并 `reindexAll` 全量重建（帖子取 `status <> PostDeleted`，用户取 `status <> UserBanned`，圈子取 `status = "normal"`（复用成员状态常量 `CircleMemberNormal`），话题取 `status = "enabled"`）；随后启动 `dispatchLoop` 与 `hotScoreLoop` 协程并进入消费循环。`hotScoreLoop` 在 Redis 启用时每 5 分钟执行 `flushHotScore`：取 `rank:post:all` ZSet Top 200，逐条以单行 UPDATE 写回 `posts.hot_score`，使未启用 Redis 的部署也能按 `hot_score` 排序（counter 职责的落地实现）。消费循环每次 `Fetch` 一条消息，JSON 反序列化为 `event.Message` 失败则直接提交位点跳过；成功则经 `handle` 串行调用五个处理器后提交位点（手动提交，处理完成后才 commit）。
+`Run` 依次执行：`kafkax.EnsureTopics` 预创建 6 个 Topic（单分区单副本，失败仅告警）；ES 启用时 `EnsureIndices` 建索引并 `reindexAll` 全量重建（帖子取 `status <> PostDeleted`，用户取 `status <> UserBanned`，圈子取 `status = "normal"`（复用成员状态常量 `CircleMemberNormal`），话题取 `status = "enabled"`）；随后启动 `dispatchLoop`、`hotScoreLoop` 与 `scheduleLoop` 三个协程并进入消费循环。`hotScoreLoop` 在 Redis 启用时每 5 分钟执行 `flushHotScore`：取 `rank:post:all` ZSet Top 200，逐条以单行 UPDATE 写回 `posts.hot_score`，使未启用 Redis 的部署也能按 `hot_score` 排序（counter 职责的落地实现）。`scheduleLoop` 每 30 秒执行 `publishDue`：`PostRepository.FindScheduledDue` 取最多 50 条到点定时帖（`status = scheduled` 且 `scheduled_at <= now`，按 `scheduled_at` 升序），`PublishScheduled` 在事务内转正为 `published`（条件更新按 `RowsAffected` 判断，并发下已被处理则跳过）并补齐用户 / 圈子 / 话题 / 标签四类发布计数，随后直接经 kafkax 发布 `PostCreated` 事件到 `{topicPrefix}.post.events`，供搜索索引、积分、榜单等下游消费；该环节随 Worker 进程运行，依赖 Kafka 启用。消费循环每次 `Fetch` 一条消息，JSON 反序列化为 `event.Message` 失败则直接提交位点跳过；成功则经 `handle` 串行调用五个处理器后提交位点（手动提交，处理完成后才 commit）。
 
 五个处理器（均在 `internal/worker/handlers.go`，逐事件串行执行）：
 
@@ -99,7 +103,7 @@ summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件�
 
 ### 3.3 缓存体系
 
-`internal/cache/cache.go` 的 `Cache` 封装 Redis 客户端，所有方法在底层 client 为 `nil`（未启用 Redis）时安全降级：读操作视为未命中、写操作为空操作、计数返回 0，业务逻辑自动回源数据库。缓存键统一在 `internal/cache/keys.go` 生成：
+`internal/cache/cache.go` 的 `Cache` 封装 Redis 客户端，所有方法在底层 client 为 `nil`（未启用 Redis）时安全降级：读操作视为未命中、写操作为空操作、计数返回 0（`SetNX` 恒返回 true，防重复提交不拦截），业务逻辑自动回源数据库。缓存键统一在 `internal/cache/keys.go` 生成：
 
 | Redis Key | 生成函数 | 数据形态 | TTL | 失效与更新方式 |
 | --- | --- | --- | --- | --- |
@@ -109,6 +113,10 @@ summary: worker/cache/event/outbox/pkg 横切基础设施总览，覆盖事件�
 | `notify:unread:{userID}` | `NotifyUnreadKey` | 整型计数 | 带 TTL（`unreadCacheTTL`） | cache-aside：读取时经 `GetIntOK` 判断命中，未命中回源 DB COUNT 并写回；Worker 生成通知与全部已读时 `Del` 失效 |
 | `rank:{post\|circle}:{today\|week\|all}` | `RankKey` | ZSet | 无 TTL | Worker 事件驱动 `ZIncr`；读侧 `ZTop` 取分页 Top，ZSet 为空时回退数据库按 `hot_score` 排序 |
 | `rank:user:{type}:{range}` | `UserRankKey` | ZSet | — | 已定义，当前无任何调用方 |
+| `user:status:{userID}` | `UserStatusKey` | 字符串（用户状态） | 10 分钟（`userStatusCacheTTL`，auth_guard.go） | cache-aside：鉴权链读取，未命中回源 `users` 表并写回；封禁/解禁时由 admin 侧 `Del` |
+| `auth:bl:{tokenHash}` | `TokenBLKey` | 整型（值 1；tokenHash 为 token 的 SHA-256 摘要） | token 剩余有效期 | 登出时 `SetInt` 写入，到期自动清理；鉴权链读取，命中即拒绝 |
+| `auth:revoked_before:{userID}` | `UserRevokedBeforeKey` | 整型（Unix 秒时间戳） | 7 天（`revokeTTL`，对齐 JWT 168 小时有效期） | 封禁时写入当前时间戳吊销该用户全部已签发 token，解禁时 `Del` |
+| `idem:post:{userID}:{hash}` / `idem:comment:{userID}:{hash}` | `IdemPostKey` / `IdemCommentKey` | 整型（值 1；hash 为 `title\|content` 或 `postId\|content` 的哈希） | 10 秒（`idemWindow`） | 发帖 / 评论前 `SetNX` 占用，占用失败返回 429；后续校验失败时 `Del` 释放 |
 | `search:hot_keywords` | `HotKeywordsKey` 常量 | ZSet | 无 TTL | 每次执行搜索时 `ZIncr`；热门搜索词读取 Top 10 |
 
 防缓存击穿的 singleflight 未实现：`pkg/singleflightx/singleflight.go` 为仅含包注释的占位文件。`observability.CacheHit`/`CacheMiss` 指标已定义但无调用点，缓存命中率不产生指标。`Cache.Decr` 提供计数递减（当前值不大于 0 时不递减），无业务调用方。
@@ -196,5 +204,6 @@ Worker 指标端口 `:9091` 与消费组订阅的 6 个 Topic 名为代码内固
 
 | 版本 | 日期 | 作者 | 说明 |
 | --- | --- | --- | --- |
+| v1.2 | 2026-09-09 | Feedora 项目组 | Worker 新增 scheduleLoop 定时帖转正；cache 新增 SetNX 与鉴权/幂等键（user:status、auth:bl、auth:revoked_before、idem:*）；Auth 中间件支持注入 AuthChecker（app.go 装配 AuthGuard） |
 | v1.1 | 2026-09-09 | Feedora 项目组 | worker.enabled 与 oss.type 生效，事件常量扩至 17 个、Topic 扩至 6 个，新增 hotScoreLoop 与 handleStat |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

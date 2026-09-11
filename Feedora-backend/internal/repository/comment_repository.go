@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"time"
 
 	"github.com/feedora/backend/internal/model"
 	"gorm.io/gorm"
@@ -29,10 +30,10 @@ func (r *CommentRepository) FindByID(id int64) (*model.Comment, error) {
 	return &m, nil
 }
 
-// ListByPost 查询帖子的全部正常评论，按创建时间升序。
+// ListByPost 查询帖子的可见评论（含删除占位节点），按创建时间升序。
 func (r *CommentRepository) ListByPost(postID int64) ([]model.Comment, error) {
 	var rows []model.Comment
-	err := r.db.Where("post_id = ? AND status = ?", postID, model.CommentNormal).
+	err := r.db.Where("post_id = ? AND status IN ?", postID, []string{model.CommentNormal, model.CommentDeleted}).
 		Order("created_at ASC").Find(&rows).Error
 	return rows, err
 }
@@ -63,14 +64,29 @@ func (r *CommentRepository) CreateWithCounters(c *model.Comment) error {
 	})
 }
 
-// DeleteWithCounters 在事务中软删除评论，并递减帖子、用户评论数。
-func (r *CommentRepository) DeleteWithCounters(c *model.Comment) {
+// HasChildren 判断评论是否仍有未物理删除的子回复。
+func (r *CommentRepository) HasChildren(id int64) bool {
+	var n int64
+	r.db.Model(&model.Comment{}).Where("parent_id = ?", id).Count(&n)
+	return n > 0
+}
+
+// DeleteWithCounters 在事务中删除评论，并递减帖子、用户评论数。
+// placeholder 为 true 时（有子回复的评论）保留行作为占位节点，仅置 status，不软删。
+func (r *CommentRepository) DeleteWithCounters(c *model.Comment, placeholder bool) {
 	_ = tx(r.db, func(t *gorm.DB) error {
-		if err := t.Model(&model.Comment{}).Where("id = ?", c.ID).Update("status", model.CommentDeleted).Error; err != nil {
-			return err
-		}
-		if err := t.Delete(&model.Comment{}, c.ID).Error; err != nil {
-			return err
+		if placeholder {
+			if err := t.Model(&model.Comment{}).Where("id = ?", c.ID).
+				Updates(map[string]any{"status": model.CommentDeleted, "updated_at": time.Now()}).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := t.Model(&model.Comment{}).Where("id = ?", c.ID).Update("status", model.CommentDeleted).Error; err != nil {
+				return err
+			}
+			if err := t.Delete(&model.Comment{}, c.ID).Error; err != nil {
+				return err
+			}
 		}
 		t.Model(&model.Post{}).Where("id = ?", c.PostID).UpdateColumn("comment_count", gorm.Expr("GREATEST(comment_count - 1, 0)"))
 		t.Model(&model.User{}).Where("id = ?", c.UserID).UpdateColumn("comment_count", gorm.Expr("GREATEST(comment_count - 1, 0)"))

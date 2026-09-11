@@ -154,16 +154,20 @@ func (r *PostRepository) CreateWithRelations(p *model.Post, images []string, tag
 			if err := t.Create(&model.PostTag{PostID: p.ID, TagID: tid, CreatedAt: now}).Error; err != nil {
 				return err
 			}
-			t.Model(&model.Tag{}).Where("id = ?", tid).UpdateColumn("use_count", gorm.Expr("use_count + 1"))
 		}
 		for _, tid := range topicIDs {
 			if err := t.Create(&model.PostTopic{PostID: p.ID, TopicID: tid, CreatedAt: now}).Error; err != nil {
 				return err
 			}
-			t.Model(&model.Topic{}).Where("id = ?", tid).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
 		}
-		// 计数只统计已发布帖子，草稿 / 定时帖在发布前不占计数。
+		// 计数只统计已发布帖子；草稿 / 定时帖在转正时由 PublishScheduled 补齐。
 		if p.Status == model.PostPublished {
+			for _, tid := range tagIDs {
+				t.Model(&model.Tag{}).Where("id = ?", tid).UpdateColumn("use_count", gorm.Expr("use_count + 1"))
+			}
+			for _, tid := range topicIDs {
+				t.Model(&model.Topic{}).Where("id = ?", tid).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
+			}
 			t.Model(&model.User{}).Where("id = ?", p.AuthorID).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
 			if p.CircleID != nil {
 				t.Model(&model.Circle{}).Where("id = ?", *p.CircleID).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
@@ -220,6 +224,48 @@ func (r *PostRepository) SoftDeleteWithCounters(p *model.Post) {
 		}
 		return nil
 	})
+}
+
+// FindScheduledDue 查询到点待转正的定时帖（未被软删）。
+func (r *PostRepository) FindScheduledDue(now time.Time, limit int) ([]model.Post, error) {
+	var rows []model.Post
+	err := r.db.Where("status = ? AND scheduled_at IS NOT NULL AND scheduled_at <= ?", model.PostScheduled, now).
+		Order("scheduled_at ASC").Limit(limit).Find(&rows).Error
+	return rows, err
+}
+
+// PublishScheduled 事务内把定时帖转正为已发布，并补齐发布计数（用户、圈子、话题、标签）。
+// 返回是否实际转正（并发下已被处理时返回 false, nil）。
+func (r *PostRepository) PublishScheduled(p *model.Post) (bool, error) {
+	now := time.Now()
+	published := false
+	err := tx(r.db, func(t *gorm.DB) error {
+		res := t.Model(&model.Post{}).Where("id = ? AND status = ?", p.ID, model.PostScheduled).
+			Updates(map[string]any{"status": model.PostPublished, "published_at": now, "updated_at": now})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return nil
+		}
+		published = true
+		t.Model(&model.User{}).Where("id = ?", p.AuthorID).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
+		if p.CircleID != nil {
+			t.Model(&model.Circle{}).Where("id = ?", *p.CircleID).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
+		}
+		var topicIDs []int64
+		t.Model(&model.PostTopic{}).Where("post_id = ?", p.ID).Pluck("topic_id", &topicIDs)
+		for _, tid := range topicIDs {
+			t.Model(&model.Topic{}).Where("id = ?", tid).UpdateColumn("post_count", gorm.Expr("post_count + 1"))
+		}
+		var tagIDs []int64
+		t.Model(&model.PostTag{}).Where("post_id = ?", p.ID).Pluck("tag_id", &tagIDs)
+		for _, tid := range tagIDs {
+			t.Model(&model.Tag{}).Where("id = ?", tid).UpdateColumn("use_count", gorm.Expr("use_count + 1"))
+		}
+		return nil
+	})
+	return published, err
 }
 
 // IncColumn 对计数列做增量（可为负）。

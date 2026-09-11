@@ -16,6 +16,7 @@ import (
 	"github.com/feedora/backend/pkg/kafkax"
 	"github.com/feedora/backend/pkg/logger"
 	"github.com/feedora/backend/pkg/observability"
+	"github.com/feedora/backend/pkg/utils"
 	"gorm.io/gorm"
 )
 
@@ -90,6 +91,7 @@ func (r *Runner) Run(ctx context.Context) {
 
 	go r.dispatchLoop(ctx)
 	go r.hotScoreLoop(ctx)
+	go r.scheduleLoop(ctx)
 
 	logger.Infof("worker 开始消费 topics=%v group=%s", topicsWithPrefix(r.cfg.Kafka.TopicPrefix), r.cfg.Kafka.ConsumerGroup)
 	for {
@@ -212,6 +214,51 @@ func (r *Runner) flushHotScore(ctx context.Context) {
 		n++
 	}
 	logger.Infof("热榜分数已回写 MySQL, count=%d", n)
+}
+
+// scheduleLoop 定时扫描到点的定时帖并转正为已发布，随后发布 PostCreated 事件，
+// 串起搜索索引、积分、榜单等下游消费。
+func (r *Runner) scheduleLoop(ctx context.Context) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			r.publishDue(ctx)
+		}
+	}
+}
+
+// publishDue 转正一批到点的定时帖（每轮最多 50 条）。
+func (r *Runner) publishDue(ctx context.Context) {
+	rows, err := r.posts.FindScheduledDue(time.Now(), 50)
+	if err != nil {
+		logger.Errorf("查询到点定时帖失败: %v", err)
+		return
+	}
+	for i := range rows {
+		published, err := r.posts.PublishScheduled(&rows[i])
+		if err != nil {
+			logger.Errorf("定时帖转正失败, postId=%d: %v", rows[i].ID, err)
+			continue
+		}
+		if !published {
+			continue
+		}
+		msg := event.Message{
+			EventID: utils.UUID(), EventType: event.PostCreated,
+			AggregateID: rows[i].ID, UserID: rows[i].AuthorID, CreatedAt: time.Now(),
+		}
+		b, _ := json.Marshal(msg)
+		topic := r.cfg.Kafka.TopicPrefix + "." + event.TopicPost
+		if err := r.producer.Publish(ctx, topic, []byte(msg.EventID), b); err != nil {
+			logger.Errorf("定时帖转正事件发布失败, postId=%d: %v", rows[i].ID, err)
+			continue
+		}
+		logger.Infof("定时帖已转正, postId=%d", rows[i].ID)
+	}
 }
 
 // Close 释放资源。

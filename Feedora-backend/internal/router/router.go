@@ -35,7 +35,8 @@ type Handlers struct {
 type Options struct {
 	CORS      config.CORSConfig
 	JWT       *jwtx.Manager
-	StaticDir string // 非空时对外提供本地静态文件（模拟 OSS）
+	Checker   middleware.AuthChecker // 鉴权链补充校验（token 黑名单 / 用户状态），可为 nil
+	StaticDir string                // 非空时对外提供本地静态文件（模拟 OSS）
 	Handlers  Handlers
 }
 
@@ -64,11 +65,11 @@ func New(opts Options) *gin.Engine {
 	}
 
 	v1 := r.Group("/api/v1")
-	v1.Use(middleware.OptionalAuth(opts.JWT)) // 全局尝试识别登录用户，未登录也放行。
+	v1.Use(middleware.OptionalAuth(opts.JWT, opts.Checker)) // 全局尝试识别登录用户，校验失败按匿名放行。
 
 	x := &ctx{
 		v1:      v1,
-		authMW:  middleware.Auth(opts.JWT),
+		authMW:  middleware.Auth(opts.JWT, opts.Checker),
 		adminMW: middleware.Admin(),
 		h:       opts.Handlers,
 	}

@@ -2,6 +2,11 @@ Feedora-frontend/node_modules
 /Feedora-backend/docs/swagger.json
 /Feedora-backend/docs/swagger.yaml
 
+# 本地运行产物
+*.log
+/Feedora-backend/bin/
+/Feedora-backend/uploads/
+
 # 本地工具生成的状态目录（任意层级生效，含 Feedora-frontend/.mimosa）
 .mimosa/
 .v2c/

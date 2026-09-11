@@ -21,3 +21,20 @@ func UserRankKey(rankType, timeRange string) string {
 
 // HotKeywordsKey 热门搜索词 ZSet。
 const HotKeywordsKey = "search:hot_keywords"
+
+// 用户状态缓存（鉴权链消费，10 分钟 TTL，封禁/解禁时主动失效）。
+func UserStatusKey(userID int64) string { return fmt.Sprintf("user:status:%d", userID) }
+
+// TokenBLKey 登出黑名单：值为 1，TTL 为 token 剩余有效期。
+func TokenBLKey(tokenHash string) string { return fmt.Sprintf("auth:bl:%s", tokenHash) }
+
+// UserRevokedBeforeKey 用户级吊销时间戳（Unix 秒）：签发时间早于该值的 token 全部失效，用于封禁等场景。
+func UserRevokedBeforeKey(userID int64) string { return fmt.Sprintf("auth:revoked_before:%d", userID) }
+
+// IdemPostKey / IdemCommentKey 写操作防重复提交（同作者同内容时间窗）。
+func IdemPostKey(userID int64, hash string) string {
+	return fmt.Sprintf("idem:post:%d:%s", userID, hash)
+}
+func IdemCommentKey(userID int64, hash string) string {
+	return fmt.Sprintf("idem:comment:%d:%s", userID, hash)
+}

@@ -1,7 +1,7 @@
 ---
 title: 后台管理模块功能文档
 date: 2026-09-09
-version: v1.1
+version: v1.2
 type: system
 module: admin
 maintainer: Feedora 项目组
@@ -15,12 +15,12 @@ related_code:
   - internal/model/admin.go
   - pkg/middleware/admin.go
   - pkg/middleware/auth.go
-summary: 面向平台管理员的后台查询与治理接口，含仪表盘统计、标签与话题管理、用户封禁与帖子上下架（事件驱动 ES 同步）及操作日志读写。
+summary: 面向平台管理员的后台查询与治理接口，含仪表盘统计、标签与话题管理、用户封禁（吊销已签发 token）与解禁、帖子上下架（事件驱动 ES 同步）及操作日志读写。
 ---
 
 ## 1. 模块概述
 
-后台管理模块（admin）挂载在 `/api/v1/admin` 路由组下，全部接口要求 JWT 登录且角色为 `admin`。模块提供用户、帖子、评论、圈子、操作日志的分页查询，仪表盘四类实体总量统计，标签与话题的创建和更新能力，以及用户封禁/解禁与帖子上下架两类治理写操作。帖子状态变更与话题创建/更新会发布 Kafka 事件，由 Worker 消费后同步 ES 索引。评论删除与用户角色变更未在本模块实现。
+后台管理模块（admin）挂载在 `/api/v1/admin` 路由组下，全部接口要求 JWT 登录且角色为 `admin`。模块提供用户、帖子、评论、圈子、操作日志的分页查询，仪表盘四类实体总量统计，标签与话题的创建和更新能力，以及用户封禁/解禁（封禁同时吊销该用户全部已签发 token）与帖子上下架两类治理写操作。帖子状态变更与话题创建/更新会发布 Kafka 事件，由 Worker 消费后同步 ES 索引。评论删除与用户角色变更未在本模块实现。
 
 ## 2. 接口清单
 
@@ -48,7 +48,7 @@ summary: 面向平台管理员的后台查询与治理接口，含仪表盘统�
 ### 管理员鉴权
 
 - 路由组以 `g := x.v1.Group("/admin", x.authMW, x.adminMW)` 注册，两个中间件按顺序执行，先认证后鉴权。
-- `middleware.Auth`（`pkg/middleware/auth.go`）解析 `Authorization: Bearer <token>` 中的 JWT，解析失败返回 401（`errs.ErrUnauth`）并中止；解析成功将 `claims.UserID` 与 `claims.Role` 写入 gin 上下文。
+- `middleware.Auth`（`pkg/middleware/auth.go`）解析 `Authorization: Bearer <token>` 中的 JWT，解析失败返回 401（`errs.ErrUnauth`）并中止；解析成功后执行注入的 `AuthChecker`（`AuthGuard.Check`：登出黑名单、用户级吊销、用户状态，见 auth.md）补充校验，通过后将 `claims.UserID` 与 `claims.Role` 写入 gin 上下文。
 - `middleware.Admin`（`pkg/middleware/admin.go`）读取上下文中的角色，不等于字符串 `"admin"` 即返回 403（`errs.ErrForbidden`）并中止。
 - 角色来源于 JWT claims，签发时取自 `users.role` 字段（默认 `user`）。管理员账号由 `cmd/seed` 种子程序创建（账号 `admin`，`role = "admin"`）。角色校验不回查数据库，修改 `users.role` 对已签发的 token 不生效，需重新登录后新 token 才携带新角色。
 - 角色只有 `admin` 一级，无更细粒度的权限划分；所有 admin 接口权限等价。
@@ -62,7 +62,7 @@ summary: 面向平台管理员的后台查询与治理接口，含仪表盘统�
 
 ### 用户封禁与帖子上下架
 
-- `PUT /admin/users/:userId/status`：请求体 `AdminUserStatusRequest`（`status` 必填）。`SetUserStatus` 校验状态枚举（仅 `normal` / `banned`，其余返回 400）与用户存在性（不存在返回 404），更新 `users.status` 后写操作日志。被封禁用户登录被 auth 模块拦截（返回 10003）；对已签发的 JWT 不生效。
+- `PUT /admin/users/:userId/status`：请求体 `AdminUserStatusRequest`（`status` 必填）。`SetUserStatus` 校验状态枚举（仅 `normal` / `banned`，其余返回 400）与用户存在性（不存在返回 404），更新 `users.status` 后执行 Redis 联动（`NewAdminService` 注入 `cache.Cache`）：删除 `user:status:{userId}` 状态缓存；封禁（`banned`）时写入 `auth:revoked_before:{userId}`，值为当前 Unix 时间戳，TTL 7 天（`revokeTTL`，与 JWT 默认 168 小时有效期对齐），使该用户全部已签发 token 经鉴权链即刻失效（签发时间早于该时间戳即拒绝，见 auth 模块 `AuthGuard`）；解禁（`normal`）时删除该吊销标记，封禁前签发的旧 token 恢复有效。最后写操作日志。被封禁用户的后续登录亦被 auth 模块拦截（返回 10003）。
 - `PUT /admin/posts/:postId/status`：请求体 `AdminPostStatusRequest`（`status` 必填）。`SetPostStatus` 校验状态枚举（仅 `published` / `hidden` / `takedown`，其余返回 400）与帖子存在性（不存在返回 20001），更新 `posts.status` 后写操作日志并按目标状态向 `TopicPost`（`feedora.post.events`）发布事件供 ES 索引同步：`published` → `PostUnhidden`、`hidden` → `PostHidden`、`takedown` → `PostUpdated`；事件 `user_id` 为管理员 ID。
 - 两接口成功均返回 `{"updated": true}`。操作日志经私有 `log()` 写入 `operation_logs`，`AdminName` 回查管理员昵称，`action` 为 `update_user_status` / `update_post_status`，`detail` 记录目标昵称/标题与目标状态。
 - 事件发布依赖 `kafka.enabled`：关闭时生产者为 Noop 实现，仅打印日志。
@@ -115,12 +115,13 @@ summary: 面向平台管理员的后台查询与治理接口，含仪表盘统�
 - 标签、话题创建的错误统一映射为 409，无法区分重名与其他数据库故障。
 - 标签/话题更新的回读错误被忽略（`FindByID` 的 error 不检查），仅以 nil 判断 404。
 - 统计接口为四次全表 Count，无缓存。
-- 封禁对已签发的 JWT 不生效，token 有效期内被封禁用户仍可访问需认证接口。
+- 封禁吊销与状态缓存依赖 Redis：未启用 Redis 时 `auth:revoked_before` 写入为空操作，token 吊销不生效，鉴权链退化为每次请求查库校验用户状态（封禁仍即时生效、解禁同理由查库结果决定）。
 - `takedown` 状态复用 `PostUpdated` 事件，ES 侧按帖子当前状态重建索引文档。
 
 ## 6. 历史版本
 
 | 版本 | 日期 | 作者 | 说明 |
 | --- | --- | --- | --- |
+| v1.2 | 2026-09-09 | Feedora 项目组 | 封禁升级为吊销该用户全部已签发 token（写 auth:revoked_before，TTL 7 天），解禁删除标记恢复旧 token；同时失效 user:status 状态缓存 |
 | v1.1 | 2026-09-09 | Feedora 项目组 | 新增用户封禁与帖子上下架接口，操作日志开始写入 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

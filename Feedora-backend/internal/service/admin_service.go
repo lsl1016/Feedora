@@ -1,14 +1,19 @@
 package service
 
 import (
+	"context"
 	"time"
 
+	"github.com/feedora/backend/internal/cache"
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/event"
 	"github.com/feedora/backend/internal/model"
 	"github.com/feedora/backend/internal/repository"
 	errs "github.com/feedora/backend/pkg/errors"
 )
+
+// revokeTTL 用户级吊销时间戳的缓存时长，与 JWT 默认有效期（168h）对齐。
+const revokeTTL = 7 * 24 * time.Hour
 
 // AdminService 后台管理业务逻辑。
 type AdminService struct {
@@ -19,6 +24,7 @@ type AdminService struct {
 	circles  *repository.CircleRepository
 	comments *repository.CommentRepository
 	producer event.Producer
+	cache    *cache.Cache
 }
 
 func NewAdminService(
@@ -29,8 +35,9 @@ func NewAdminService(
 	circles *repository.CircleRepository,
 	comments *repository.CommentRepository,
 	producer event.Producer,
+	cch *cache.Cache,
 ) *AdminService {
-	return &AdminService{admin: admin, users: users, tags: tags, topics: topics, circles: circles, comments: comments, producer: producer}
+	return &AdminService{admin: admin, users: users, tags: tags, topics: topics, circles: circles, comments: comments, producer: producer, cache: cch}
 }
 
 // Users 用户列表。
@@ -174,7 +181,7 @@ func (s *AdminService) UpdateTopic(id int64, in dto.UpdateTopicRequest) (*dto.To
 	return &res, nil
 }
 
-// SetUserStatus 封禁 / 解禁用户，并记录操作日志。
+// SetUserStatus 封禁 / 解禁用户：更新状态、吊销或恢复 token、失效状态缓存，并记录操作日志。
 func (s *AdminService) SetUserStatus(adminID, userID int64, status string) error {
 	switch status {
 	case model.UserNormal, model.UserBanned:
@@ -187,6 +194,14 @@ func (s *AdminService) SetUserStatus(adminID, userID int64, status string) error
 	}
 	if err := s.admin.UpdateUserStatus(userID, status); err != nil {
 		return errs.ErrInternal
+	}
+	// 失效状态缓存；封禁时吊销该用户全部已签发 token，解禁时恢复。
+	ctx := context.Background()
+	s.cache.Del(ctx, cache.UserStatusKey(userID))
+	if status == model.UserBanned {
+		s.cache.SetInt(ctx, cache.UserRevokedBeforeKey(userID), time.Now().Unix(), revokeTTL)
+	} else {
+		s.cache.Del(ctx, cache.UserRevokedBeforeKey(userID))
 	}
 	s.log(adminID, "update_user_status", "user", userID, "用户 "+u.Nickname+" 状态变更为 "+status)
 	return nil

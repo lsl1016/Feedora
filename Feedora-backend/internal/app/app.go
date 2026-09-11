@@ -106,8 +106,9 @@ func New(configPath string) (*App, error) {
 	}
 
 	// 服务层。
+	guard := service.NewAuthGuard(userRepo, cch)
 	postSvc := service.NewPostService(postRepo, userRepo, tagRepo, topicRepo, circleRepo, interRepo, producer, cch)
-	authSvc := service.NewAuthService(userRepo, jm, producer)
+	authSvc := service.NewAuthService(userRepo, jm, producer, cch)
 	commentSvc := service.NewCommentService(commentRepo, postRepo, userRepo, interRepo, producer, cch)
 	interSvc := service.NewInteractionService(postRepo, userRepo, interRepo, producer, cch)
 	tagSvc := service.NewTagService(tagRepo, postSvc)
@@ -115,7 +116,7 @@ func New(configPath string) (*App, error) {
 	circleSvc := service.NewCircleService(circleRepo, userRepo, postSvc, producer, cch)
 	userSvc := service.NewUserService(userRepo, interRepo, postSvc, commentSvc, cch)
 	fileSvc := service.NewFileService(fileRepo, storage)
-	adminSvc := service.NewAdminService(adminRepo, userRepo, tagRepo, topicRepo, circleRepo, commentRepo, producer)
+	adminSvc := service.NewAdminService(adminRepo, userRepo, tagRepo, topicRepo, circleRepo, commentRepo, producer, cch)
 	searchSvc := service.NewSearchService(searchClient, postRepo, userRepo, topicRepo, circleRepo, postSvc, cch)
 	rankSvc := service.NewRankService(db, postRepo, userRepo, topicRepo, circleRepo, cch)
 	notifSvc := service.NewNotificationService(notifRepo, cch)
@@ -144,6 +145,7 @@ func New(configPath string) (*App, error) {
 	engine := router.New(router.Options{
 		CORS:      cfg.CORS,
 		JWT:       jm,
+		Checker:   guard.Check,
 		StaticDir: storage.BasePath(),
 		Handlers:  handlers,
 	})

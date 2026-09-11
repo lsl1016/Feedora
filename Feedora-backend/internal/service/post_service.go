@@ -12,6 +12,7 @@ import (
 	"github.com/feedora/backend/internal/model"
 	"github.com/feedora/backend/internal/repository"
 	errs "github.com/feedora/backend/pkg/errors"
+	"github.com/feedora/backend/pkg/utils"
 )
 
 // postDetailTTL 帖子详情缓存时长。
@@ -219,6 +220,15 @@ func (s *PostService) Create(authorID int64, in dto.CreatePostRequest) (*dto.Pos
 	if in.Visibility == "" {
 		in.Visibility = model.VisibilityPublic
 	}
+	// 防重复提交：同作者同内容 10 秒窗口内只放行一次；后续校验失败时释放窗口允许重试。
+	idemKey := cache.IdemPostKey(authorID, utils.QueryHash(in.Title+"|"+in.Content))
+	if !s.cache.SetNX(context.Background(), idemKey, idemWindow) {
+		return nil, errs.ErrRateLimit
+	}
+	fail := func(err error) (*dto.Post, error) {
+		s.cache.Del(context.Background(), idemKey)
+		return nil, err
+	}
 	status := model.PostPublished
 	switch in.PublishMode {
 	case "draft":
@@ -228,7 +238,7 @@ func (s *PostService) Create(authorID int64, in dto.CreatePostRequest) (*dto.Pos
 	}
 	if in.CircleID != nil {
 		if err := s.checkCirclePostPermission(*in.CircleID, authorID); err != nil {
-			return nil, err
+			return fail(err)
 		}
 	}
 	now := time.Now()
@@ -250,8 +260,18 @@ func (s *PostService) Create(authorID int64, in dto.CreatePostRequest) (*dto.Pos
 	if status == model.PostPublished {
 		p.PublishedAt = &now
 	}
+	if status == model.PostScheduled {
+		if in.ScheduledAt == nil {
+			return fail(errs.ErrParams)
+		}
+		st, err := time.Parse(time.RFC3339, *in.ScheduledAt)
+		if err != nil {
+			return fail(errs.ErrParams)
+		}
+		p.ScheduledAt = &st
+	}
 	if err := s.posts.CreateWithRelations(p, in.Images, dedup(in.TagIDs), dedup(in.TopicIDs)); err != nil {
-		return nil, errs.ErrInternal
+		return fail(errs.ErrInternal)
 	}
 	s.producer.Publish(event.TopicPost, event.PostCreated, p.ID, authorID, map[string]any{"title": p.Title})
 	return s.Get(p.ID, authorID)

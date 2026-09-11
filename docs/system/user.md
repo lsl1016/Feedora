@@ -1,7 +1,7 @@
 ---
 title: 用户模块功能文档
 date: 2026-09-09
-version: v1.0
+version: v1.2
 type: system
 module: user
 maintainer: Feedora 项目组
@@ -12,6 +12,7 @@ related_code:
   - internal/dto/user_dto.go
   - internal/service/user_service.go
   - internal/repository/user_repository.go
+  - internal/repository/interaction_repository.go
   - internal/model/user.go
 summary: 提供用户列表与详情查询、当前用户资料维护，以及我的帖子、评论、点赞、收藏四类个人内容聚合视图。
 ---
@@ -62,7 +63,7 @@ summary: 提供用户列表与详情查询、当前用户资料维护，以及�
 
 ### 3.6 点赞与收藏帖子
 
-`MyLikedPosts` 与 `MyFavoritePosts` 共用 `postsByRelation` 私有方法：先经 `InteractionRepository.PostIDsByUser` 从关系表（`post_likes` 或 `post_favorites`）取出该用户全部帖子 ID（按关系建立时间倒序），`total` 取全量 ID 数，再对 ID 切片做内存分页（按 `offset`/`size` 截取），最后经 `PostService.AssembleByIDs` 组装帖子 DTO。每次请求都会加载该用户的全量关系 ID，分页在进程内存中完成。
+`MyLikedPosts` 与 `MyFavoritePosts` 共用 `postsByRelation` 私有方法：经 `InteractionRepository.PagePostIDsByUser(table, userId, offset, limit)` 在关系表（`post_likes` 或 `post_favorites`）上执行 DB 级分页——先 `COUNT` 取该用户关系总数，再按关系 `id` 倒序以 `LIMIT/OFFSET` 取当前页帖子 ID，最后经 `PostService.AssembleByIDs` 组装帖子 DTO。每次请求只加载当前页的关系记录，不再全量取 ID 后内存切页（原 `PostIDsByUser` 全量方法已删除）。
 
 ### 3.7 统计字段维护
 
@@ -107,7 +108,6 @@ users 表（`model.User`，表名 `users`）关键字段：
 当前实现的其他限制：
 
 - 用户创建（注册）不在本模块，`UserRepository.Create`、`FindByAccount`、`CountByAccount` 供认证模块等外部调用，本模块路由不触达；
-- 点赞 / 收藏帖子列表采用全量 ID 加载加内存分页，未下推到 SQL 分页；
 - 用户列表与详情为公开接口且响应包含 `account` 字段；
 - `experience`、`nextLevelExperience`、`badgeCount`、签到字段为占位或近似值，见 3.8 节。
 
@@ -115,4 +115,5 @@ users 表（`model.User`，表名 `users`）关键字段：
 
 | 版本 | 日期 | 作者 | 变更说明 |
 |------|------|------|----------|
+| v1.2 | 2026-09-09 | Feedora 项目组 | 我的点赞/收藏列表改为 DB 级分页（PagePostIDsByUser：COUNT + LIMIT/OFFSET 按关系 id 倒序），删除全量 ID 内存分页 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |

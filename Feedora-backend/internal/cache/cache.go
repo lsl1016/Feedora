@@ -133,3 +133,13 @@ func (c *Cache) SetInt(ctx context.Context, key string, val int64, ttl time.Dura
 	}
 	c.rdb.Set(ctx, key, val, ttl)
 }
+
+// SetNX 仅当 Key 不存在时占用（值为 1，带 TTL），返回是否占用成功。
+// Redis 未启用时恒返回 true，即不拦截写操作（降级为无去重）。
+func (c *Cache) SetNX(ctx context.Context, key string, ttl time.Duration) bool {
+	if !c.Enabled() {
+		return true
+	}
+	ok, err := c.rdb.SetNX(ctx, key, 1, ttl).Result()
+	return err == nil && ok
+}

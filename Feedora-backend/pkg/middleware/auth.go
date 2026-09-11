@@ -9,14 +9,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Auth 校验 JWT，将 userId、role 写入上下文。未登录直接返回 401。
-func Auth(jm *jwtx.Manager) gin.HandlerFunc {
+// AuthChecker 鉴权链的补充校验：token 黑名单、用户级吊销、用户状态。
+// 返回非 nil error 表示拒绝该请求；可为 nil（跳过补充校验，仅验签）。
+type AuthChecker func(claims *jwtx.Claims, token string) error
+
+// Auth 校验 JWT 与补充规则，将 userId、role 写入上下文。未登录或校验失败返回 401/403。
+func Auth(jm *jwtx.Manager, checker AuthChecker) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		claims, ok := parseToken(c, jm)
+		token := bearerToken(c)
+		claims, ok := parseToken(token, jm)
 		if !ok {
 			response.Fail(c, errs.ErrUnauth)
 			c.Abort()
 			return
+		}
+		if checker != nil {
+			if err := checker(claims, token); err != nil {
+				response.Fail(c, err)
+				c.Abort()
+				return
+			}
 		}
 		c.Set(CtxUserID, claims.UserID)
 		c.Set(CtxRole, claims.Role)
@@ -24,24 +36,38 @@ func Auth(jm *jwtx.Manager) gin.HandlerFunc {
 	}
 }
 
-// OptionalAuth 尝试解析 JWT，解析成功则写入上下文，失败也放行。
+// OptionalAuth 尝试解析 JWT，解析并校验成功则写入上下文，否则按匿名放行。
 // 用于既支持匿名访问、又能识别登录用户的接口（如帖子列表、详情）。
-func OptionalAuth(jm *jwtx.Manager) gin.HandlerFunc {
+// 校验失败（封禁 / 已吊销）的 token 按匿名处理，不写入身份。
+func OptionalAuth(jm *jwtx.Manager, checker AuthChecker) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if claims, ok := parseToken(c, jm); ok {
-			c.Set(CtxUserID, claims.UserID)
-			c.Set(CtxRole, claims.Role)
+		token := bearerToken(c)
+		claims, ok := parseToken(token, jm)
+		if !ok {
+			c.Next()
+			return
 		}
+		if checker != nil {
+			if err := checker(claims, token); err != nil {
+				c.Next()
+				return
+			}
+		}
+		c.Set(CtxUserID, claims.UserID)
+		c.Set(CtxRole, claims.Role)
 		c.Next()
 	}
 }
 
-func parseToken(c *gin.Context, jm *jwtx.Manager) (*jwtx.Claims, bool) {
-	auth := c.GetHeader("Authorization")
-	if !strings.HasPrefix(auth, "Bearer ") {
+func bearerToken(c *gin.Context) string {
+	return strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+}
+
+func parseToken(token string, jm *jwtx.Manager) (*jwtx.Claims, bool) {
+	if token == "" {
 		return nil, false
 	}
-	claims, err := jm.Parse(strings.TrimPrefix(auth, "Bearer "))
+	claims, err := jm.Parse(token)
 	if err != nil {
 		return nil, false
 	}

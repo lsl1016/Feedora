@@ -13,7 +13,6 @@ import (
 	errs "github.com/feedora/backend/pkg/errors"
 	"github.com/feedora/backend/pkg/utils"
 )
-
 // CommentService 评论业务逻辑。
 type CommentService struct {
 	comments *repository.CommentRepository
@@ -57,14 +56,19 @@ func (s *CommentService) ListByPost(postID, viewerID int64) ([]dto.Comment, erro
 	likedSet := s.inters.CommentLikedSet(viewerID, commentIDs)
 
 	toDTO := func(m *model.Comment) dto.Comment {
+		content, likeCount, liked := m.Content, m.LikeCount, likedSet[m.ID]
+		if m.Status == model.CommentDeleted {
+			// 占位节点：保留在树中以维持回复结构，内容显示为占位文案。
+			content, likeCount, liked = "该评论已删除", 0, false
+		}
 		return dto.Comment{
 			CommentID: m.ID,
 			PostID:    m.PostID,
 			UserID:    m.UserID,
 			User:      dto.ToUserSummary(users[m.UserID]),
-			Content:   m.Content,
-			LikeCount: m.LikeCount,
-			Liked:     likedSet[m.ID],
+			Content:   content,
+			LikeCount: likeCount,
+			Liked:     liked,
 			Status:    m.Status,
 			Replies:   []dto.Comment{},
 			CreatedAt: utils.FormatTime(m.CreatedAt),
@@ -121,15 +125,24 @@ func (s *CommentService) create(postID, userID, parentID, rootID int64, replyTo 
 	if content == "" {
 		return nil, errs.ErrParams
 	}
+	// 防重复提交：同作者同帖同内容 10 秒窗口内只放行一次；后续校验失败时释放窗口允许重试。
+	idemKey := cache.IdemCommentKey(userID, utils.QueryHash(itoa(postID)+"|"+content))
+	if !s.cache.SetNX(context.Background(), idemKey, idemWindow) {
+		return nil, errs.ErrRateLimit
+	}
+	fail := func(err error) (*dto.Comment, error) {
+		s.cache.Del(context.Background(), idemKey)
+		return nil, err
+	}
 	p, err := s.posts.FindByID(postID)
 	if err != nil {
-		return nil, errs.ErrInternal
+		return fail(errs.ErrInternal)
 	}
 	if p == nil {
-		return nil, errs.ErrPostNotFound
+		return fail(errs.ErrPostNotFound)
 	}
 	if p.Status != model.PostPublished {
-		return nil, errs.ErrPostInvisible
+		return fail(errs.ErrPostInvisible)
 	}
 	now := time.Now()
 	m := &model.Comment{
@@ -144,7 +157,7 @@ func (s *CommentService) create(postID, userID, parentID, rootID int64, replyTo 
 		UpdatedAt:     now,
 	}
 	if err := s.comments.CreateWithCounters(m); err != nil {
-		return nil, errs.ErrInternal
+		return fail(errs.ErrInternal)
 	}
 	s.cache.Del(context.Background(), cache.PostDetailKey(postID))
 	s.producer.Publish(event.TopicComment, event.CommentCreated, m.ID, userID, map[string]any{"postId": postID, "postAuthorId": p.AuthorID})
@@ -170,7 +183,8 @@ func (s *CommentService) Delete(commentID, userID int64, isAdmin bool) error {
 	if m.UserID != userID && !isAdmin {
 		return errs.ErrForbidden
 	}
-	s.comments.DeleteWithCounters(m)
+	// 有子回复的评论保留为占位节点（仅置状态），叶子评论正常软删；计数均对称回减。
+	s.comments.DeleteWithCounters(m, s.comments.HasChildren(commentID))
 	s.cache.Del(context.Background(), cache.PostDetailKey(m.PostID))
 	return nil
 }

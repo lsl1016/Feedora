@@ -82,11 +82,17 @@ func (r *InteractionRepository) FavoritedSet(userID int64, postIDs []int64) map[
 	return res
 }
 
-// PostIDsByUser 查询用户点赞 / 收藏的帖子 ID（按时间倒序），table 取 post_likes / post_favorites。
-func (r *InteractionRepository) PostIDsByUser(table string, userID int64) []int64 {
+// PagePostIDsByUser 分页查询用户点赞 / 收藏的帖子 ID（按关系时间倒序），避免全量加载后内存分页。
+func (r *InteractionRepository) PagePostIDsByUser(table string, userID int64, offset, limit int) ([]int64, int64) {
+	var total int64
+	r.db.Table(table).Where("user_id = ?", userID).Count(&total)
+	if total == 0 {
+		return nil, 0
+	}
 	var ids []int64
-	r.db.Table(table).Where("user_id = ?", userID).Order("id DESC").Pluck("post_id", &ids)
-	return ids
+	r.db.Table(table).Where("user_id = ?", userID).Order("id DESC").
+		Offset(offset).Limit(limit).Pluck("post_id", &ids)
+	return ids, total
 }
 
 // AddCommentLike 评论点赞，返回是否实际插入。

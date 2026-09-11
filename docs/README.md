@@ -10,8 +10,8 @@ Feedora 是开发者知识社区 V2.1 的 monorepo，包含 Go 后端（`Feedora
 
 | 文档 | 模块 | 版本 | 最近更新 | 说明 |
 |------|------|------|----------|------|
-| [auth.md](system/auth.md) | auth | v1.0 | 2026-09-09 | 注册、登录、JWT 鉴权 |
-| [user.md](system/user.md) | user | v1.0 | 2026-09-09 | 用户资料与个人主页 |
+| [auth.md](system/auth.md) | auth | v1.2 | 2026-09-09 | 注册、登录、JWT 鉴权 |
+| [user.md](system/user.md) | user | v1.2 | 2026-09-09 | 用户资料与个人主页 |
 | [post.md](system/post.md) | post | v1.1 | 2026-09-09 | 帖子发布、浏览、详情 |
 | [comment.md](system/comment.md) | comment | v1.1 | 2026-09-09 | 评论与回复 |
 | [circle.md](system/circle.md) | circle | v1.0 | 2026-09-09 | 圈子、成员、公告 |

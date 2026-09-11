@@ -1,6 +1,9 @@
 package service
 
-import "strconv"
+import (
+	"strconv"
+	"time"
+)
 
 // itoa 将 int64 转为字符串。
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
@@ -29,3 +32,6 @@ func normPage(page, size int) (int, int) {
 func offset(page, size int) int {
 	return (page - 1) * size
 }
+
+// idemWindow 写操作防重复提交的判定时间窗（同作者同内容）。
+const idemWindow = 10 * time.Second

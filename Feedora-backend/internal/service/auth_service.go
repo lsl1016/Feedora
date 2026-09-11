@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"strings"
 	"time"
 
+	"github.com/feedora/backend/internal/cache"
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/event"
 	"github.com/feedora/backend/internal/model"
@@ -18,10 +20,11 @@ type AuthService struct {
 	users    *repository.UserRepository
 	jwt      *jwtx.Manager
 	producer event.Producer
+	cache    *cache.Cache
 }
 
-func NewAuthService(users *repository.UserRepository, jm *jwtx.Manager, producer event.Producer) *AuthService {
-	return &AuthService{users: users, jwt: jm, producer: producer}
+func NewAuthService(users *repository.UserRepository, jm *jwtx.Manager, producer event.Producer, cch *cache.Cache) *AuthService {
+	return &AuthService{users: users, jwt: jm, producer: producer, cache: cch}
 }
 
 // Register 注册新用户。
@@ -102,4 +105,21 @@ func (s *AuthService) issue(u *model.User) (*dto.LoginResult, error) {
 		return nil, errs.ErrInternal
 	}
 	return &dto.LoginResult{Token: token, User: dto.ToUser(u, false, 0)}, nil
+}
+
+// Logout 登出：把当前 token 加入 Redis 黑名单，TTL 为剩余有效期，到期自动清理。
+// token 无效或已过期时不做任何事（无可吊销内容）。
+func (s *AuthService) Logout(token string) {
+	if token == "" {
+		return
+	}
+	claims, err := s.jwt.Parse(token)
+	if err != nil || claims.ExpiresAt == nil {
+		return
+	}
+	remain := time.Until(claims.ExpiresAt.Time)
+	if remain <= 0 {
+		return
+	}
+	s.cache.SetInt(context.Background(), cache.TokenBLKey(hashToken(token)), 1, remain)
 }

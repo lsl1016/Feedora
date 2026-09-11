@@ -1,6 +1,8 @@
 package api
 
 import (
+	"strings"
+
 	"github.com/feedora/backend/internal/dto"
 	"github.com/feedora/backend/internal/service"
 	"github.com/feedora/backend/pkg/middleware"
@@ -78,7 +80,7 @@ func (h *AuthAPI) Me(c *gin.Context) {
 	response.OK(c, res)
 }
 
-// Logout 退出登录（无状态 JWT，登出由前端清除 token）
+// Logout 退出登录（服务端把当前 token 加入黑名单，前端同时清除本地 token）
 // @Summary  退出登录
 // @Tags     认证
 // @Produce  json
@@ -87,5 +89,6 @@ func (h *AuthAPI) Me(c *gin.Context) {
 // @Failure  400  {object}  response.Body
 // @Router   /auth/logout [post]
 func (h *AuthAPI) Logout(c *gin.Context) {
+	h.svc.Logout(strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer "))
 	response.OK(c, gin.H{})
 }

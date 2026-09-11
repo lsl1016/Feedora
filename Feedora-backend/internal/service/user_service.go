@@ -111,23 +111,14 @@ func (s *UserService) MyFavoritePosts(userID int64, page, size int) ([]dto.Post,
 	return s.postsByRelation("post_favorites", userID, page, size)
 }
 
-// postsByRelation 根据点赞 / 收藏关系表查询帖子，保持关系时间倒序。
+// postsByRelation 根据点赞 / 收藏关系表分页查询帖子，保持关系时间倒序（DB 级分页）。
 func (s *UserService) postsByRelation(table string, userID int64, page, size int) ([]dto.Post, int64, error) {
 	page, size = normPage(page, size)
-	ids := s.inters.PostIDsByUser(table, userID)
-	total := int64(len(ids))
+	ids, total := s.inters.PagePostIDsByUser(table, userID, offset(page, size), size)
 	if total == 0 {
 		return []dto.Post{}, 0, nil
 	}
-	start := offset(page, size)
-	if start > len(ids) {
-		start = len(ids)
-	}
-	end := start + size
-	if end > len(ids) {
-		end = len(ids)
-	}
-	list, err := s.postSvc.AssembleByIDs(ids[start:end], userID)
+	list, err := s.postSvc.AssembleByIDs(ids, userID)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -1,7 +1,7 @@
 ---
 title: 帖子模块功能文档
 date: 2026-09-09
-version: v1.1
+version: v1.2
 type: system
 module: post
 maintainer: Feedora 项目组
@@ -15,12 +15,12 @@ related_code:
   - internal/model/post.go
   - internal/model/constants.go
   - internal/event/producer.go
-summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、软删除、分享与转发，以及按圈子/话题/标签/关注流等多维度的分页列表和基于 Redis 缓存的详情查询，变更通过 post.events 事件对外发布。
+summary: 帖子模块提供发帖（立即/草稿/预约，定时帖由 Worker 每 30 秒扫描自动转正）、编辑、隐藏、软删除、分享与转发，以及按圈子/话题/标签/关注流等多维度的分页列表和基于 Redis 缓存的详情查询，发帖经 Redis 时间窗防重复提交，变更通过 post.events 事件对外发布。
 ---
 
 ## 1. 模块概述
 
-帖子模块提供帖子的发布（立即发布、草稿、预约三种状态）、编辑、隐藏/取消隐藏、软删除、分享计数与转发能力，并提供多维度分页列表与单帖详情查询。`PostService` 同时承担帖子 DTO 的批量聚合装配（`Assemble`，一次性加载作者、图片、标签、话题、圈子与点赞/收藏状态），被话题、标签、圈子、用户、搜索等模块复用。详情查询采用 Redis Cache-Aside 缓存（键 `post:detail:{postId}`，TTL 10 分钟），帖子变更通过 `post.events` 主题以事件形式对外发布。
+帖子模块提供帖子的发布（立即发布、草稿、预约三种状态，定时帖由 Worker 定时扫描转正）、编辑、隐藏/取消隐藏、软删除、分享计数与转发能力，并提供多维度分页列表与单帖详情查询。`PostService` 同时承担帖子 DTO 的批量聚合装配（`Assemble`，一次性加载作者、图片、标签、话题、圈子与点赞/收藏状态），被话题、标签、圈子、用户、搜索等模块复用。详情查询采用 Redis Cache-Aside 缓存（键 `post:detail:{postId}`，TTL 10 分钟），帖子变更通过 `post.events` 主题以事件形式对外发布。
 
 ## 2. 接口清单
 
@@ -47,18 +47,20 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 `Create` 按以下顺序处理：
 
 1. 标题去首尾空白，标题或正文为空返回参数错误；`visibility` 为空时默认 `public`。
-2. `publishMode` 映射状态：`draft` → `draft`，`schedule` → `scheduled`，其余值（含空）→ `published`；仅 `published` 状态写入 `published_at`。
-3. 携带 `circleId` 时执行 `checkCirclePostPermission`：圈子不存在返回圈子不存在错误；成员记录不存在或状态为 `removed` 返回未加入错误；状态为 `muted` 返回禁言错误；圈子 `post_permission = "admin_only"` 时要求成员角色为 `owner` 或 `moderator`。
-4. 标签/话题 ID 先经 `dedup` 去重并过滤非正整数，再调用 `CreateWithRelations` 落库。
+2. 防重复提交：以 `IdemPostKey` 生成键 `idem:post:{userId}:{hash(title|content)}` 执行 Redis `SetNX`，10 秒窗口内同作者同标题正文的重复提交返回 429（`errs.ErrRateLimit`）；窗口占用后任何校验失败（参数错误、圈子权限不足等）会删除该键释放窗口允许立即重试，Redis 未启用时不拦截。
+3. `publishMode` 映射状态：`draft` → `draft`，`schedule` → `scheduled`，其余值（含空）→ `published`；仅 `published` 状态写入 `published_at`。`schedule` 模式解析并持久化 `scheduledAt`（RFC3339 格式，写入 `posts.scheduled_at`），字段缺失或格式错误返回参数错误。
+4. 携带 `circleId` 时执行 `checkCirclePostPermission`：圈子不存在返回圈子不存在错误；成员记录不存在或状态为 `removed` 返回未加入错误；状态为 `muted` 返回禁言错误；圈子 `post_permission = "admin_only"` 时要求成员角色为 `owner` 或 `moderator`。
+5. 标签/话题 ID 先经 `dedup` 去重并过滤非正整数，再调用 `CreateWithRelations` 落库。
 
 `PostRepository.CreateWithRelations` 在单个数据库事务内完成：
 
 - 插入 `posts` 主记录；`summary` 取正文前 120 个字符（超出追加 `...`），`images` 非空时首图写入 `cover_url`。
 - 逐条插入 `post_images`（`sort_order` 为图片下标）。
-- 逐条插入 `post_tags` 并对每个标签执行 `use_count + 1`；逐条插入 `post_topics` 并对每个话题执行 `post_count + 1`；这两项不区分帖子状态，`draft`/`scheduled` 帖同样递增。
-- 帖子状态为 `published` 时对作者执行 `users.post_count + 1`，帖子归属圈子时对 `circles.post_count + 1`；`draft`/`scheduled` 帖不递增这两项计数。
+- 逐条插入 `post_tags`、`post_topics` 关系记录；四类发布计数只在帖子状态为 `published` 时递增：每个标签 `tags.use_count + 1`、每个话题 `topics.post_count + 1`、作者 `users.post_count + 1`，帖子归属圈子时 `circles.post_count + 1`。`draft` / `scheduled` 帖不递增任何计数，定时帖在转正时由 `PublishScheduled` 补齐（口径一致）。
 
 事务提交后 `Create` 不再对作者 `post_count` 做额外递增，一次成功发布中作者计数仅在事务内递增一次。
+
+定时帖转正由 Worker 进程的 `scheduleLoop` 完成（见 infrastructure.md）：每 30 秒调用 `FindScheduledDue(now, 50)` 查询 `status = scheduled` 且 `scheduled_at` 非空并早于当前时间的帖子（按 `scheduled_at` 升序，每轮最多 50 条）；`PublishScheduled` 在事务内以条件更新 `WHERE id = ? AND status = 'scheduled'` 置 `published` 并写 `published_at`，`RowsAffected = 0` 视为已被并发处理、跳过且不加计数，实际转正时补齐标签 / 话题 / 用户 / 圈子四类发布计数；转正成功后直接经 kafkax 发布 `PostCreated` 事件到 `post.events`（不经过 outbox 表），串起搜索索引、积分与榜单等下游消费。
 
 `Repost` 转发生成新帖：`post_type = repost`，标题为 `转发：` + 源帖标题，正文与 `repost_comment` 为转发附言，`source_post_id` 指向源帖，可见性固定 `public`、状态固定 `published`；随后源帖 `repost_count + 1`、转发者 `users.post_count + 1`。转发走 `PostRepository.Create` 单条插入，不建立标签/话题关系。
 
@@ -106,7 +108,7 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 | `SetHidden(false)` | `PostUnhidden`（常量 `event.PostUnhidden`） | `nil` |
 | `Delete` | `PostDeleted` | `nil` |
 
-`Share` 与 `Repost` 不发送任何事件。
+`Share` 与 `Repost` 不发送任何事件。定时帖由 Worker 转正后同样发布 `PostCreated` 事件（见 3.1，经 kafkax 直接发布、不经过 outbox）。
 
 ### 3.5 缓存策略
 
@@ -152,8 +154,8 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 
 当前实现的局限：
 
-- `CreatePostRequest.scheduledAt` 参数被接受但未映射到 `posts.scheduled_at`，预约时间不持久化；`scheduled` 状态帖子无定时发布任务，不会自动转为 `published`。
-- `posts.hot_score` 列在全部代码中无写入点，`hot` 排序实际按默认值 0 排序后退化为 `created_at DESC`。
+- 定时帖转正由 Worker 进程完成，未运行 Worker 或 `kafka.enabled = false` 时，到点的 `scheduled` 帖保持原状态不变。
+- `posts.hot_score` 仅由 Worker 的 `hotScoreLoop` 每 5 分钟从 `rank:post:all` ZSet 回写（依赖 Redis 启用），API 进程内无写入点；未启用 Redis 的部署中 `hot` 排序按默认值 0 退化。
 - `Repost` 不校验源帖状态与可见性，源帖为 `hidden` 或 `draft` 时仍可转发。
 - `Share` 仅递增计数，不记录分享者；`Update` 不能修改标签、话题与圈子归属。
 - DTO 中 `isTop`、`isFeatured`、`isSelected`、`followedAuthor` 字段无数据来源，`ToPost` 不赋值，响应中恒为 `false`。
@@ -162,5 +164,6 @@ summary: 帖子模块提供发帖（立即/草稿/预约）、编辑、隐藏、
 
 | 版本 | 日期 | 维护者 | 说明 |
 |---|---|---|---|
+| v1.2 | 2026-09-09 | Feedora 项目组 | 发布计数统一为仅 published 递增；定时帖持久化 scheduledAt 并由 Worker 每 30 秒转正后发 PostCreated 事件；发帖新增 10 秒时间窗防重复提交 |
 | v1.1 | 2026-09-09 | Feedora 项目组 | 修正计数维护描述：发布计数仅统计已发布帖，删帖改为事务内对称回减，`PostUnhidden` 改用事件常量 |
 | v1.0 | 2026-09-09 | Feedora 项目组 | 初始版本 |
