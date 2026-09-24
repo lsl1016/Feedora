@@ -23,11 +23,9 @@ test('web runs completely in mock mode without backend', async ({ page }) => {
 
 
 test('web mock write interactions work without backend', async ({ page }) => {
-  const loginResponse = await page.goto('http://127.0.0.1:5173/login');
-  console.log('LOGIN DEBUG status=', loginResponse?.status(), 'url=', page.url());
-  console.log('LOGIN DEBUG body=', (await page.locator('body').innerText()).slice(0, 2500));
+  await page.goto('http://127.0.0.1:5173/login');
   await expect(page.getByRole('heading', { name: '开发者知识社区' })).toBeVisible();
-  await page.getByRole('button', { name: '登录' }).click();
+  await page.locator('.auth-card button[type="submit"]').click();
   await expect(page).toHaveURL('http://127.0.0.1:5173/');
 
   const firstPost = page.locator('.post-card').first();
