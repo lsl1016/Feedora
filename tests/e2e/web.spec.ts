@@ -7,7 +7,7 @@ test('web runs completely in mock mode without backend', async ({ page }) => {
   await expect(page.getByText('推荐圈子')).toBeVisible();
 
   await page.goto('http://127.0.0.1:5173/workspace');
-  await expect(page.getByRole('heading', { name: '工作空间' })).toBeVisible();
+  await expect(page.locator('.workspace-content').getByRole('heading', { name: '工作空间' })).toBeVisible();
   await expect(page.getByText('Feedora Desktop V1 架构拆解').first()).toBeVisible();
 
   await page.goto('http://127.0.0.1:5173/topics');
