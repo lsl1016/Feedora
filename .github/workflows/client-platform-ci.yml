@@ -52,6 +52,14 @@ jobs:
       - name: Run client interaction smoke tests
         run: pnpm test:e2e
 
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results
+          if-no-files-found: ignore
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
