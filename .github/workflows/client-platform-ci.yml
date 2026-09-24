@@ -16,6 +16,10 @@ on:
       - "go.work"
       - ".github/workflows/client-platform-ci.yml"
 
+concurrency:
+  group: client-platform-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   clients:
     runs-on: ubuntu-latest
