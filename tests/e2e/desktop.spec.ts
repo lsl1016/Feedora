@@ -20,7 +20,7 @@ test('desktop mock workflow works across core tabs', async ({ page }) => {
 
   await page.getByRole('link', { name: '工作台' }).click();
   await expect(page.getByRole('heading', { name: '工作台' })).toBeVisible();
-  await expect(page.getByText('最近编辑')).toBeVisible();
+  await expect(page.locator('.main-canvas').getByText('最近编辑')).toBeVisible();
 
   await page.locator('.context-item').filter({ hasText: /^笔记$/ }).click();
   await expect(page.getByText(/Feedora Desktop V1 架构拆解/).first()).toBeVisible();
