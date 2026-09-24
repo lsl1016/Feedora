@@ -101,8 +101,47 @@ export function createMockFeedoraApi(): Record<string, Fn> {
     deletePost: async (id:number) => { const p=state.posts.find((x:any)=>x.postId===Number(id)); if(p)p.status='deleted'; return wait({success:true}); },
     likePost: async (id:number) => { const p=state.posts.find((x:any)=>x.postId===Number(id)); if(p){p.liked=!p.liked;p.likeCount+=p.liked?1:-1;} return wait(p); },
     favoritePost: async (id:number) => { const p=state.posts.find((x:any)=>x.postId===Number(id)); if(p){p.favorited=!p.favorited;p.favoriteCount+=p.favorited?1:-1;} return wait(p); },
-    sharePost: async (id:number) => { const p=state.posts.find((x:any)=>x.postId===Number(id)); if(p)p.shareCount++; return wait({success:true}); },
-    repostPost: async (id:number) => { const p=state.posts.find((x:any)=>x.postId===Number(id)); if(p)p.repostCount++; return wait({success:true}); },
+    sharePost: async (id:number) => {
+      const p=state.posts.find((x:any)=>x.postId===Number(id));
+      if(p)p.shareCount++;
+      return wait(p);
+    },
+    repostPost: async (id:number,repostComment='') => {
+      const source=state.posts.find((x:any)=>x.postId===Number(id));
+      if(!source) return wait(undefined);
+      source.repostCount++;
+      const repost={
+        ...clone(source),
+        postId:++nextId,
+        postType:'repost',
+        authorId:currentUser().userId,
+        author:userSummary(currentUser()),
+        title:'转发：'+source.title,
+        content:'',
+        summary:source.summary,
+        sourcePostId:source.postId,
+        sourcePost:clone(source),
+        repostComment,
+        isTop:false,
+        isFeatured:false,
+        isSelected:false,
+        viewCount:0,
+        likeCount:0,
+        commentCount:0,
+        favoriteCount:0,
+        shareCount:0,
+        repostCount:0,
+        hotScore:0,
+        liked:false,
+        favorited:false,
+        followedAuthor:false,
+        createdAt:'2026-09-24 12:30:00',
+        publishedAt:'2026-09-24 12:30:00',
+        updatedAt:'2026-09-24 12:30:00',
+      };
+      state.posts.unshift(repost);
+      return wait(repost);
+    },
 
     getComments: async (postId:number,q:any={}) => wait(page(state.comments.filter((x:any)=>x.postId===Number(postId)&&x.status!=='deleted'),q)),
     addComment: async (postId:number,content:string) => { const c={commentId:++nextId,postId:Number(postId),userId:1,user:userSummary(currentUser()),content,likeCount:0,liked:false,status:'normal',replies:[],createdAt:'2026-09-24 12:20:00',updatedAt:'2026-09-24 12:20:00'}; state.comments.unshift(c); const p=state.posts.find((x:any)=>x.postId===Number(postId)); if(p)p.commentCount++; return wait(c); },
@@ -150,7 +189,15 @@ export function createMockFeedoraApi(): Record<string, Fn> {
     searchSuggest: async (keyword:string) => wait(['Wails Bridge','Agent Runtime','RAG 检索'].filter(x=>x.toLowerCase().includes((keyword||'').toLowerCase()))),
     getHotKeywords: async () => wait(['Agent Runtime','Wails','RAG','Go 并发','MCP']),
 
-    checkIn: async () => { currentUser().checkedInToday=true;currentUser().points+=20;return wait({points:20}); },
+    checkIn: async () => {
+      const user=currentUser();
+      if(!user.checkedInToday){
+        user.checkedInToday=true;
+        user.points+=20;
+        user.continuousCheckInDays=(user.continuousCheckInDays||0)+1;
+      }
+      return wait({points:20,continuousDays:user.continuousCheckInDays});
+    },
     getTasks: async (type:string) => wait(state.tasks.filter((x:any)=>x.type===type)),
     claimTask: async (id:number) => { const t=state.tasks.find((x:any)=>x.taskId===Number(id));if(t)t.status='claimed';return wait(t); },
     getRankings: async (type:string) => {
