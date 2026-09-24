@@ -50,5 +50,5 @@ test('web mock write interactions work without backend', async ({ page }) => {
   await page.getByLabel('正文').fill('这是通过 Web Mock Runtime 保存的一篇测试笔记，用于验证无后端情况下的写入交互。');
   await page.locator('.workspace-content button.ant-btn-primary').first().click();
   await expect(page).toHaveURL(/\/workspace\/notes\/\d+/);
-  await expect(page.getByDisplayValue('E2E 新建知识笔记')).toBeVisible();
+  await expect(page.getByLabel('标题')).toHaveValue('E2E 新建知识笔记');
 });
