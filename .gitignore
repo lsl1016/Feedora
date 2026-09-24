@@ -1,4 +1,7 @@
-Feedora-frontend/node_modules
+node_modules/
+dist/
+*.tsbuildinfo
+
 /Feedora-backend/docs/swagger.json
 /Feedora-backend/docs/swagger.yaml
 
@@ -6,7 +9,9 @@ Feedora-frontend/node_modules
 *.log
 /Feedora-backend/bin/
 /Feedora-backend/uploads/
+/apps/desktop/build/bin/
+/apps/desktop/frontend/wailsjs/
 
-# 本地工具生成的状态目录（任意层级生效，含 Feedora-frontend/.mimosa）
+# 本地工具生成的状态目录
 .mimosa/
 .v2c/

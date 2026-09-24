@@ -1,0 +1,14 @@
+{
+  "name": "@feedora/platform-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@feedora/app-core": "workspace:*",
+    "@feedora/contracts": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts"
+}

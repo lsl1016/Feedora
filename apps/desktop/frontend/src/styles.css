@@ -1,0 +1,101 @@
+html, body, #root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f8fafc;
+}
+
+* { box-sizing: border-box; }
+
+.desktop-root {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 50px 1fr 24px;
+  color: #111827;
+}
+
+.desktop-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.desktop-version { color: #64748b; font-size: 12px; }
+.desktop-command { width: 540px; margin: 0 auto; }
+
+.desktop-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 56px 260px minmax(420px, 1fr) 380px;
+}
+
+.activity-rail {
+  border-right: 1px solid #e5e7eb;
+  background: #f8fafc;
+  padding-top: 12px;
+}
+
+.activity-item {
+  height: 66px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  color: #475569;
+  font-size: 11px;
+}
+
+.activity-item.active {
+  color: #2563eb;
+  background: #eaf2ff;
+  border-left: 2px solid #2563eb;
+}
+
+.context-sidebar {
+  padding: 18px 14px;
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  overflow: auto;
+}
+
+.context-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+.context-item { padding: 9px 12px; border-radius: 8px; margin-bottom: 4px; color: #475569; }
+.context-item.active { color: #2563eb; background: #eff6ff; }
+
+.main-canvas { min-width: 0; overflow: auto; background: #ffffff; }
+.desktop-page { padding: 28px 32px; }
+.desktop-placeholder-card { min-height: 240px; color: #64748b; }
+
+.ai-panel {
+  padding: 18px 16px;
+  border-left: 1px solid #e5e7eb;
+  background: #fbfdff;
+  overflow: auto;
+}
+
+.ai-panel-title { font-size: 18px; font-weight: 700; margin-bottom: 18px; }
+.ai-context, .ai-empty {
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 14px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+}

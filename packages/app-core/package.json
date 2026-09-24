@@ -1,0 +1,13 @@
+{
+  "name": "@feedora/app-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@feedora/contracts": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts"
+}
