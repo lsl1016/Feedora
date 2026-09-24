@@ -8,6 +8,8 @@ on:
     paths:
       - "apps/**"
       - "packages/**"
+      - "tests/**"
+      - "playwright.config.ts"
       - "package.json"
       - "pnpm-workspace.yaml"
       - "tsconfig.base.json"
@@ -39,6 +41,12 @@ jobs:
 
       - name: Build Desktop UI
         run: pnpm build:desktop-ui
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run client interaction smoke tests
+        run: pnpm test:e2e
 
       - name: Setup Go
         uses: actions/setup-go@v5

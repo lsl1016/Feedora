@@ -8,6 +8,10 @@
     "build:web": "pnpm --filter @feedora/web build",
     "dev:desktop-ui": "pnpm --filter @feedora/desktop-ui dev",
     "build:desktop-ui": "pnpm --filter @feedora/desktop-ui build",
-    "build:clients": "pnpm --filter @feedora/web build && pnpm --filter @feedora/desktop-ui build"
+    "build:clients": "pnpm --filter @feedora/web build && pnpm --filter @feedora/desktop-ui build",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
   }
 }
